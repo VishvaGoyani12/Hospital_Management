@@ -1,23 +1,112 @@
-﻿@inherits LayoutComponentBase
+﻿@using Appointment_Management_Blazor.Client.Helper
+@inherits LayoutComponentBase
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+<div class="d-flex flex-column min-vh-100" style="background-color: #ffffff;">
+    <!-- Header -->
+    <header class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="bi bi-calendar2-week-fill me-2"></i>AppointPro
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    @if (!IsAuthenticated)
+                    {
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="login">
+                                <i class="bi bi-box-arrow-in-right me-1"></i>Login
+                            </NavLink>
+                        </li>
+                        <li class="nav-item">
+                            <NavLink class="nav-link" href="register">
+                                <i class="bi bi-person-plus me-1"></i>Register
+                            </NavLink>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle me-1"></i>@UserName
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <NavLink class="dropdown-item" href="/profile">
+                                        <i class="bi bi-person me-2"></i>Profile
+                                    </NavLink>
+                                </li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li>
+                                    <button class="dropdown-item text-danger" @onclick="Logout">
+                                        <i class="bi bi-box-arrow-right me-2"></i>Logout
+                                    </button>
+                                </li>
+                            </ul>
+                        </li>
+                    }
+                </ul>
+            </div>
         </div>
+    </header>
 
-        <article class="content px-4">
+    <!-- Main -->
+    <main class="flex-grow-1 py-4">
+        <div class="container">
             @Body
-        </article>
+        </div>
     </main>
 </div>
 
-<div id="blazor-error-ui">
-    An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
-</div>
+
+@code {
+    private IEnumerable<string> userRoles = Enumerable.Empty<string>();
+    private string? userEmail;
+    private bool IsAuthenticated = false;
+    private string UserName = "Guest";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAuthState();
+        NavigationManager.LocationChanged += HandleLocationChanged;
+    }
+
+    private async void HandleLocationChanged(object? sender, EventArgs e)
+    {
+        await LoadAuthState();
+        StateHasChanged();
+    }
+
+    private async Task LoadAuthState()
+    {
+        var token = await localStorage.GetItemAsync<string>("jwt_token");
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            userRoles = JwtParser.GetRolesFromToken(token);
+            userEmail = JwtParser.GetEmailFromToken(token);
+            IsAuthenticated = true;
+            UserName = userEmail ?? "User";
+        }
+        else
+        {
+            IsAuthenticated = false;
+            UserName = "Guest";
+        }
+    }
+
+    private async Task Logout()
+    {
+        await localStorage.RemoveItemAsync("jwt_token");
+        IsAuthenticated = false;
+        userRoles = Enumerable.Empty<string>();
+        UserName = "Guest";
+        NavigationManager.NavigateTo("/login", forceLoad: true);
+    }
+
+    [Inject]
+    private NavigationManager NavigationManager { get; set; }
+}

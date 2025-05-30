@@ -1,0 +1,191 @@
+﻿@page "/login"
+@inject IAccountClientService AccountClientService
+@inject NavigationManager NavigationManager
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+
+
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-sm-10 col-md-6 col-lg-5 col-xl-4">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-primary text-white text-center">
+                        <h5 class="mb-0 fw-semibold"><i class="bi bi-box-arrow-in-right me-2"></i>Sign In</h5>
+                    </div>
+                    <div class="card-body px-4 py-4">
+                        <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="alert alert-danger p-2 small" />
+
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="bi bi-envelope text-muted"></i>
+                                    </span>
+                                    <InputText @bind-Value="loginModel.Email" class="form-control" placeholder="user@example.com" />
+                                </div>
+                                <ValidationMessage For="@(() => loginModel.Email)" class="text-danger small" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="bi bi-lock text-muted"></i>
+                                    </span>
+                                    <InputText @bind-Value="loginModel.Password" type="password" class="form-control" placeholder="••••••••" />
+                                </div>
+                                <ValidationMessage For="@(() => loginModel.Password)" class="text-danger small" />
+                            </div>
+
+                            <div class="d-grid mt-4">
+                                <button type="submit" class="btn btn-primary" disabled="@isProcessing">
+                                    @if (isProcessing)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        <span>Signing in...</span>
+                                                                        }
+                                    else
+                                    {
+                                        <i class="bi bi-box-arrow-in-right me-2"></i>
+                                        <span>Sign In</span>
+                                                                        }
+                                </button>
+                            </div>
+                        </EditForm>
+
+                        @if (!string.IsNullOrEmpty(message))
+                        {
+                            <div class="alert @(isSuccess ? "alert-success" : "alert-danger") mt-3 small">
+                                <i class="bi @(isSuccess ? "bi-check-circle" : "bi-exclamation-triangle") me-2"></i>
+                                @message
+                            </div>
+                        }
+                    </div>
+                    <div class="card-footer bg-light text-center py-3">
+                        <div class="small">
+                            <a href="/register" class="text-decoration-none">Create account</a>
+                            <span class="mx-2 text-muted">|</span>
+                            <a href="/forgot-password" class="text-decoration-none">Forgot password?</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    private LoginViewModel loginModel = new LoginViewModel();
+    private string message = string.Empty;
+    private bool isSuccess = false;
+    private bool isProcessing = false;
+
+    private async Task HandleLogin()
+    {
+        isProcessing = true;
+        message = string.Empty;
+        StateHasChanged();
+
+        try
+        {
+            var result = await AccountClientService.LoginAsync(loginModel);
+            message = result.Message ?? "Login completed";
+            isSuccess = result.IsSuccess;
+
+            if (result.IsSuccess && !string.IsNullOrEmpty(result.Token))
+            {
+                // Store token first
+                await localStorage.SetItemAsync("jwt_token", result.Token);
+
+                // Parse roles
+                var roles = JwtParser.GetRolesFromToken(result.Token).ToList();
+                Console.WriteLine($"ROLES FOUND: {string.Join(", ", roles)}");
+
+                // Debug - print all claims
+                var claims = ParseAllClaims(result.Token);
+                Console.WriteLine("ALL CLAIMS:");
+                foreach (var claim in claims)
+                {
+                    Console.WriteLine($"{claim.Key}: {claim.Value}");
+                }
+
+                // Force UI update before navigation
+                StateHasChanged();
+                await Task.Delay(100);
+
+                // Case-insensitive role comparison
+                if (roles.Any(r => r.Equals("Admin", StringComparison.OrdinalIgnoreCase)))
+                {
+                    Console.WriteLine("Redirecting to /Doctor");
+                    NavigationManager.NavigateTo("/Doctor", forceLoad: true);
+                }
+                else if (roles.Any(r => r.Equals("Doctor", StringComparison.OrdinalIgnoreCase)))
+                {
+                    Console.WriteLine("Redirecting to /DoctorAppointment");
+                    NavigationManager.NavigateTo("/DoctorAppointment", forceLoad: true);
+                }
+                else if (roles.Any(r => r.Equals("Patient", StringComparison.OrdinalIgnoreCase)))
+                {
+                    Console.WriteLine("Redirecting to /PatientAppointment");
+                    NavigationManager.NavigateTo("/PatientAppointment", forceLoad: true);
+                }
+                else
+                {
+                    Console.WriteLine("No matching role, redirecting to home");
+                    NavigationManager.NavigateTo("/", forceLoad: true);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            message = $"Login failed: {ex.Message}";
+            isSuccess = false;
+            Console.WriteLine($"Login error: {ex}");
+        }
+        finally
+        {
+            isProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    private Dictionary<string, string> ParseAllClaims(string jwtToken)
+    {
+        var claims = new Dictionary<string, string>();
+        try
+        {
+            var parts = jwtToken.Split('.');
+            if (parts.Length != 3) return claims;
+
+            var payload = parts[1];
+            var jsonBytes = ParseBase64WithoutPadding(payload);
+            var keyValuePairs = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonBytes.AsSpan());
+
+
+            if (keyValuePairs != null)
+            {
+                foreach (var kvp in keyValuePairs)
+                {
+                    claims[kvp.Key] = kvp.Value.ToString();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error parsing claims: {ex}");
+        }
+        return claims;
+    }
+
+    private static byte[] ParseBase64WithoutPadding(string base64)
+    {
+        switch (base64.Length % 4)
+        {
+            case 2: base64 += "=="; break;
+            case 3: base64 += "="; break;
+        }
+        return Convert.FromBase64String(base64);
+    }
+}

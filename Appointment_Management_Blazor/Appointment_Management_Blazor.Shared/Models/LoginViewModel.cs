@@ -4,16 +4,14 @@ namespace Appointment_Management_Blazor.Shared.Models
 {
     public class LoginViewModel
     {
-        [Required]
-        [EmailAddress]
-        [RegularExpression(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", ErrorMessage = "Please enter a valid email address.")]
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Invalid Email Address")]
+        [Display(Name = "Email")]
         public string Email { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "Password is required")]
         [DataType(DataType.Password)]
+        [Display(Name = "Password")]
         public string Password { get; set; } = string.Empty;
-
-        [Display(Name = "Remember Me")]
-        public bool RememberMe { get; set; }
     }
 }

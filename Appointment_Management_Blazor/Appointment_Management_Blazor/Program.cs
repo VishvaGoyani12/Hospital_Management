@@ -1,5 +1,4 @@
 ﻿using Appointment_Management_Blazor.Client.Components;
-using Appointment_Management_Blazor.Client.Services;
 using Appointment_Management_Blazor.Data;
 using Appointment_Management_Blazor.Helper;
 using Appointment_Management_Blazor.Services.Implementations;
@@ -14,6 +13,10 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Net;
 using System.Text;
+using Blazored.LocalStorage;
+using Appointment_Management_Blazor.Client.Helper;
+using Appointment_Management_Blazor.Client.Services.Interfaces;
+using Appointment_Management_Blazor.Client.Services.Implementations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -79,22 +82,51 @@ builder.Services.AddAuthentication(options =>
 });
 
 
-
+builder.Services.AddAuthorization(); 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 
 builder.Services.AddRazorPages();
+builder.Services.AddServerSideBlazor();
 builder.Services.AddControllers();
 
-// add services
+// Add these after Blazored.LocalStorage
+builder.Services.AddBlazoredLocalStorage();
+builder.Services.AddScoped<AuthHeaderHandler>(); // Register the handler
+
+// Get API base URL from config
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"]
+                 ?? throw new InvalidOperationException("ApiBaseUrl is not configured.");
+
+// Register named HttpClient (for authorized requests)
+builder.Services.AddHttpClient("AuthorizedClient", client =>
+{
+    client.BaseAddress = new Uri(apiBaseUrl);
+}).AddHttpMessageHandler<AuthHeaderHandler>();
+
+// Register default HttpClient (for public requests)
+builder.Services.AddScoped(sp => new HttpClient
+{
+    BaseAddress = new Uri(apiBaseUrl)
+});
+
+// Register typed HttpClients (reusing the same base URL)
+builder.Services.AddHttpClient<IAccountClientService, AccountClientService>(client =>
+{
+    client.BaseAddress = new Uri(apiBaseUrl);
+});
+
+builder.Services.AddHttpClient<IDoctorClientService, DoctorClientService>("AuthorizedClient", client =>
+{
+    client.BaseAddress = new Uri(apiBaseUrl);
+}).AddHttpMessageHandler<AuthHeaderHandler>();
 
 
+// Other services...
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IDoctorService, DoctorService>();
-builder.Services.AddHttpClient<IAccountClientService, AccountClientService>(client => {
-    client.BaseAddress = new Uri("https://localhost:7066/");
-});
+builder.Services.AddHttpContextAccessor();
 
 
 
@@ -131,7 +163,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowBlazorClient", builder =>
     {
-        builder.WithOrigins("https://localhost:7066") // Blazor client URL
+        builder.WithOrigins("https://localhost:7066") 
                .AllowAnyMethod()
                .AllowAnyHeader()
                .AllowCredentials();
@@ -156,10 +188,12 @@ else
 }
 
 app.UseHttpsRedirection();
-
-app.UseBlazorFrameworkFiles();  //
 app.UseStaticFiles();
+
 app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.UseAntiforgery();
 app.UseEndpoints(endpoints =>
@@ -169,7 +203,6 @@ app.UseEndpoints(endpoints =>
     endpoints.MapFallbackToFile("App.razor");
 });
 
-app.UseAuthentication();
 
 app.Use(async (context, next) =>
 {
@@ -182,7 +215,6 @@ app.Use(async (context, next) =>
 
 app.UseCors("AllowBlazorClient");
 
-app.UseAuthorization();
 
 
 app.MapRazorComponents<App>()

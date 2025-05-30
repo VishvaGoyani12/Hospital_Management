@@ -1,20 +1,18 @@
-using Appointment_Management_Blazor.Client.Services;
+using Appointment_Management_Blazor.Client.Helper;
+using Appointment_Management_Blazor.Client.Services.Implementations;
+using Appointment_Management_Blazor.Client.Services.Interfaces;
+using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
-// Base HTTP client
-builder.Services.AddScoped(sp => new HttpClient
-{
-    BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
-});
-
-// Register services
 builder.Services.AddScoped<IAccountClientService, AccountClientService>();
+builder.Services.AddScoped<IDoctorClientService, DoctorClientService>();
+builder.Services.AddScoped<AuthHeaderHandler>();
 
-// Add authorization core for Blazor WebAssembly
-builder.Services.AddAuthorizationCore();
+builder.Services.AddBlazoredLocalStorage();
 
 await builder.Build().RunAsync();

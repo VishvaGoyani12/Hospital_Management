@@ -4,6 +4,7 @@ using Appointment_Management_Blazor.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 
 namespace Appointment_Management_Blazor.Controllers
 {
@@ -25,43 +26,49 @@ namespace Appointment_Management_Blazor.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterViewModel model)
         {
-
-            // Log incoming model
-            _logger.LogInformation("Received registration model: {@Model}", model);
-
-            if (model == null)
+            try
             {
-                return BadRequest(new AuthResponse
+                _logger.LogInformation("Registration attempt for: {Email}", model?.Email);
+
+                if (model == null)
+                {
+                    _logger.LogWarning("Null model received");
+                    return BadRequest(new { Message = "Request body cannot be null" });
+                }
+
+                // Manual validation
+                var validationResults = new List<ValidationResult>();
+                var validationContext = new ValidationContext(model);
+                if (!Validator.TryValidateObject(model, validationContext, validationResults, true))
+                {
+                    _logger.LogWarning("Validation failed: {Errors}", validationResults);
+                    return BadRequest(new
+                    {
+                        Message = "Validation failed",
+                        Errors = validationResults.Select(v => v.ErrorMessage)
+                    });
+                }
+
+                var result = await _accountService.RegisterAsync(model);
+
+                if (!result.IsSuccess)
+                {
+                    _logger.LogWarning("Registration failed: {Message}", result.Message);
+                    return BadRequest(result);
+                }
+
+                _logger.LogInformation("Registration successful for: {Email}", model.Email);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during registration");
+                return StatusCode(500, new AuthResponse
                 {
                     IsSuccess = false,
-                    Message = "Request body cannot be null"
+                    Message = "An internal server error occurred"
                 });
             }
-
-            if (!ModelState.IsValid)
-            {
-                var errors = ModelState
-                    .Where(x => x.Value.Errors.Count > 0)
-                    .ToDictionary(
-                        kvp => kvp.Key,
-                        kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
-                    );
-
-                return BadRequest(new AuthResponse
-                {
-                    IsSuccess = false,
-                    Message = "Validation failed",
-                    Errors = errors
-                });
-            }
-
-
-            var result = await _accountService.RegisterAsync(model);
-
-            if (!result.IsSuccess)
-                return BadRequest(result);
-
-            return Ok(result);
         }
 
 

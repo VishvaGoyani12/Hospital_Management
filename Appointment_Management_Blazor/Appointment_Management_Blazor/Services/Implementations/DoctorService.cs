@@ -29,7 +29,11 @@ namespace Appointment_Management_Blazor.Services.Implementations
             int pageSize = filters.Length != 0 ? filters.Length : 10;
             int skip = filters.Start;
 
-            var query = _context.Doctors.Include(d => d.ApplicationUser).AsQueryable();
+            var query = _context.Doctors
+                .Include(d => d.ApplicationUser)
+                .Where(d => d.ApplicationUser != null)
+                .AsQueryable();
+            
 
             if (!string.IsNullOrEmpty(filters.Gender))
                 query = query.Where(d => d.ApplicationUser.Gender == filters.Gender);
@@ -48,8 +52,7 @@ namespace Appointment_Management_Blazor.Services.Implementations
                     d.SpecialistIn.Contains(filters.SearchValue));
             }
 
-            var total = query.Count();
-
+            var total = await query.CountAsync();
             var sortMap = new Dictionary<string, string>
             {
                 ["fullName"] = "ApplicationUser.FullName",
@@ -63,14 +66,19 @@ namespace Appointment_Management_Blazor.Services.Implementations
                 query = query.OrderBy($"{mappedColumn} {filters.SortDirection}");
             }
 
-            var data = await query.Skip(skip).Take(pageSize).Select(d => new
-            {
-                id = d.ApplicationUserId,
-                fullName = d.ApplicationUser.FullName,
-                gender = d.ApplicationUser.Gender,
-                specialistIn = d.SpecialistIn,
-                status = d.Status ? "Active" : "Deactive"
-            }).ToListAsync();
+            var data = await query
+        .Skip(skip)
+        .Take(pageSize)
+        .Select(d => new
+        {
+            id = d.ApplicationUserId,
+            fullName = d.ApplicationUser.FullName,
+            gender = d.ApplicationUser.Gender,
+            email = d.ApplicationUser.Email,
+            specialistIn = d.SpecialistIn,
+            status = d.Status
+        })
+        .ToListAsync();
 
             return new
             {

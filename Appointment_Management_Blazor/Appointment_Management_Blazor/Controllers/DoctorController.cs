@@ -6,14 +6,14 @@ using Appointment_Management_Blazor.Shared.Models;
 
 namespace Appointment_Management_Blazor.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    //[Authorize(Roles = "Admin")]
     [Route("api/[controller]")]
     [ApiController]
-    public class DoctorApiController : ControllerBase
+    public class DoctorController : ControllerBase
     {
         private readonly IDoctorService _doctorService;
 
-        public DoctorApiController(IDoctorService doctorService)
+        public DoctorController(IDoctorService doctorService)
         {
             _doctorService = doctorService;
         }

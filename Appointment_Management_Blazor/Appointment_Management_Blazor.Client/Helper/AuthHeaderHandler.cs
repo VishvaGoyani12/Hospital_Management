@@ -1,4 +1,5 @@
-﻿using Blazored.LocalStorage;
+﻿// Client/Helper/AuthHeaderHandler.cs
+using Blazored.LocalStorage;
 using System.Net.Http.Headers;
 
 namespace Appointment_Management_Blazor.Client.Helper
@@ -16,12 +17,24 @@ namespace Appointment_Management_Blazor.Client.Helper
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            var token = await _localStorage.GetItemAsync<string>("authToken");
-            if (!string.IsNullOrEmpty(token))
+            try
             {
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                var token = await _localStorage.GetItemAsync<string>("authToken");
+
+                if (!string.IsNullOrEmpty(token))
+                {
+                    // Ensure the token is properly formatted (remove quotes if present)
+                    token = token.Trim('"');
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                }
+
+                return await base.SendAsync(request, cancellationToken);
             }
-            return await base.SendAsync(request, cancellationToken);
+            catch
+            {
+                // If token retrieval fails, continue without it
+                return await base.SendAsync(request, cancellationToken);
+            }
         }
     }
 }

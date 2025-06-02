@@ -122,10 +122,19 @@ builder.Services.AddHttpClient<IDoctorClientService, DoctorClientService>("Autho
     client.BaseAddress = new Uri(apiBaseUrl);
 }).AddHttpMessageHandler<AuthHeaderHandler>();
 
+builder.Services.AddHttpClient<IPatientClientService, PatientClientService>("AuthorizedClient", client =>
+{
+    client.BaseAddress = new Uri(apiBaseUrl);
+}).AddHttpMessageHandler<AuthHeaderHandler>();
+
 
 // Other services...
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IDoctorService, DoctorService>();
+builder.Services.AddScoped<IPatientService, PatientService>();
+builder.Services.AddScoped<IPatientAppointmentService, PatientAppointmentService >();
+
+
 builder.Services.AddHttpContextAccessor();
 
 

@@ -18,8 +18,17 @@ namespace Appointment_Management_Blazor.Controllers
             _doctorService = doctorService;
         }
 
+        // Existing GET endpoint with query parameters
         [HttpGet]
         public async Task<IActionResult> GetAllDoctors([FromQuery] DoctorFilterModel filters)
+        {
+            var result = await _doctorService.GetAllDoctorsAsync(filters);
+            return Ok(result);
+        }
+
+        // New POST endpoint for more complex filtering
+        [HttpPost("list")]
+        public async Task<IActionResult> GetDoctorList([FromBody] DoctorFilterModel filters)
         {
             var result = await _doctorService.GetAllDoctorsAsync(filters);
             return Ok(result);
@@ -38,15 +47,28 @@ namespace Appointment_Management_Blazor.Controllers
         {
             var doctor = await _doctorService.GetDoctorByIdAsync(id);
             if (doctor == null) return NotFound();
-            return Ok(doctor);
+            return Ok(new
+            {
+                id = doctor.ApplicationUserId,  // key name "id" to match client DTO
+                fullName = doctor.FullName,
+                gender = doctor.Gender,
+                email = doctor.Email,
+                specialistIn = doctor.SpecialistIn,
+                status = doctor.Status
+            });
         }
 
         [HttpPut("edit")]
         public async Task<IActionResult> EditDoctor([FromBody] DoctorViewModel model)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { success = false, message = "Invalid data" });
+            }
+
             var (success, message) = await _doctorService.UpdateDoctorAsync(model);
             if (!success) return BadRequest(new { success = false, message });
-            return Ok(new { success = true });
+            return Ok(new { success = true, message });
         }
 
         [HttpDelete("{id}")]
@@ -63,6 +85,4 @@ namespace Appointment_Management_Blazor.Controllers
             return Ok(list);
         }
     }
-
-
 }

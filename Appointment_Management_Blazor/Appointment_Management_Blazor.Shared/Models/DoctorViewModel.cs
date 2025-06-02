@@ -5,6 +5,7 @@ namespace Appointment_Management_Blazor.Shared.Models
 {
     public class DoctorViewModel
     {
+        public int Id { get; set; }
         public string? ApplicationUserId { get; set; }
 
         [Required]

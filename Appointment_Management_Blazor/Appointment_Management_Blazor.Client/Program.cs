@@ -11,6 +11,9 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 
 builder.Services.AddScoped<IAccountClientService, AccountClientService>();
 builder.Services.AddScoped<IDoctorClientService, DoctorClientService>();
+builder.Services.AddScoped<IPatientClientService, PatientClientService>();
+builder.Services.AddScoped<IPatientAppointmentClientService, PatientAppointmentClientService>();
+
 builder.Services.AddScoped<AuthHeaderHandler>();
 
 builder.Services.AddBlazoredLocalStorage();

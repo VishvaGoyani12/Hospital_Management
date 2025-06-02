@@ -5,20 +5,13 @@ namespace Appointment_Management_Blazor.Shared.Models
     public class AppointmentViewModel
     {
         public int Id { get; set; }
-
-        [Required(ErrorMessage = "Please select a doctor.")]
-        public int DoctorId { get; set; }
-
-        [Required(ErrorMessage = "Please select a patient.")]
         public int PatientId { get; set; }
-
-        [Required(ErrorMessage = "Please select an appointment date.")]
+        public int? DoctorId { get; set; }
         public DateTime AppointmentDate { get; set; }
+        public string Description { get; set; } = string.Empty;
+        public string Status { get; set; } = "Pending";
 
-        [Required(ErrorMessage = "Description is required.")]
-        public string Description { get; set; }
-
-        [Required(ErrorMessage = "Please select status.")]
-        public string Status { get; set; }
+        public string? PatientName { get; set; }
+        public string? DoctorName { get; set; }
     }
 }

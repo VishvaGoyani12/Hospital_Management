@@ -28,71 +28,137 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
         {
             try
             {
-                var queryParams = new Dictionary<string, string>
+                var response = await _httpClient.PostAsJsonAsync("api/doctor/list", filters);
+
+                if (response.IsSuccessStatusCode)
                 {
-                    ["draw"] = filters.Draw.ToString(),
-                    ["start"] = filters.Start.ToString(),
-                    ["length"] = filters.Length.ToString()
+                    return await response.Content.ReadFromJsonAsync<DoctorListResponse>();
+                }
+
+                var errorContent = await response.Content.ReadAsStringAsync();
+                return new DoctorListResponse
+                {
+                    Data = new List<DoctorDto>(),
+                    RecordsTotal = 0,
+                    RecordsFiltered = 0,
+                    Draw = filters.Draw
                 };
-
-                if (!string.IsNullOrEmpty(filters.SearchValue))
-                    queryParams["searchValue"] = filters.SearchValue;
-
-                var queryString = string.Join("&", queryParams.Select(kvp => $"{kvp.Key}={Uri.EscapeDataString(kvp.Value)}"));
-
-                var response = await _httpClient.GetAsync($"api/doctor?{queryString}");
-                response.EnsureSuccessStatusCode();
-
-                return await response.Content.ReadFromJsonAsync<DoctorListResponse>();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error fetching doctors: {ex.Message}");
-                return new DoctorListResponse();
+                return new DoctorListResponse
+                {
+                    Data = new List<DoctorDto>(),
+                    RecordsTotal = 0,
+                    RecordsFiltered = 0,
+                    Draw = filters.Draw
+                };
             }
         }
 
         public async Task<DoctorDto> GetDoctorByIdAsync(string id)
         {
-            return await _httpClient.GetFromJsonAsync<DoctorDto>($"api/doctor/{id}");
+            var response = await _httpClient.GetAsync($"api/doctor/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                // Deserialize JSON to DoctorDto
+                var doctor = await response.Content.ReadFromJsonAsync<DoctorDto>();
+                return doctor;
+            }
+            return null;
         }
+
 
         public async Task<ApiResponse> CreateDoctorAsync(DoctorViewModel model)
         {
-            var response = await _httpClient.PostAsJsonAsync("api/doctor/create", model);
-            if (response.IsSuccessStatusCode)
+            try
             {
-                var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
-                return result ?? new ApiResponse { Success = false, Message = "Unknown error" };
+                var response = await _httpClient.PostAsJsonAsync("api/doctor/create", model); // Changed from "api/doctor/create" to "api/account/create"
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<ApiResponse>();
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    return new ApiResponse
+                    {
+                        Success = false,
+                        Message = $"Error: {response.StatusCode} - {errorContent}"
+                    };
+                }
             }
-            else
+            catch (Exception ex)
             {
-                var error = await response.Content.ReadAsStringAsync();
-                return new ApiResponse { Success = false, Message = error };
+                return new ApiResponse
+                {
+                    Success = false,
+                    Message = $"Exception: {ex.Message}"
+                };
             }
         }
 
         public async Task<ApiResponse> UpdateDoctorAsync(DoctorViewModel model)
         {
-            // Assuming your API expects PUT at api/doctors/{id}
-            var response = await _httpClient.PutAsJsonAsync("api/doctor/edit", model);
-            if (response.IsSuccessStatusCode)
+            try
             {
-                var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
-                return result ?? new ApiResponse { Success = false, Message = "Unknown error" };
+                var response = await _httpClient.PutAsJsonAsync("api/doctor/edit", model);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<ApiResponse>();
+                }
+
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Update error: {errorContent}");
+                return new ApiResponse
+                {
+                    Success = false,
+                    Message = $"Error: {response.StatusCode} - {errorContent}"
+                };
             }
-            else
+            catch (Exception ex)
             {
-                var error = await response.Content.ReadAsStringAsync();
-                return new ApiResponse { Success = false, Message = error };
+                Console.WriteLine($"Update exception: {ex}");
+                return new ApiResponse
+                {
+                    Success = false,
+                    Message = $"Exception: {ex.Message}"
+                };
             }
         }
 
-
         public async Task<ApiResponse> DeleteDoctorAsync(string id)
         {
-            var response = await _httpClient.DeleteAsync($"api/doctor/{id}");
-            return await response.Content.ReadFromJsonAsync<ApiResponse>();
+            try
+            {
+                // Changed endpoint to match controller route
+                var response = await _httpClient.DeleteAsync($"api/doctor/{id}");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<ApiResponse>();
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    return new ApiResponse
+                    {
+                        Success = false,
+                        Message = $"Error: {response.StatusCode} - {errorContent}"
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ApiResponse
+                {
+                    Success = false,
+                    Message = $"Exception: {ex.Message}"
+                };
+            }
         }
 
         public async Task<List<string>> GetSpecialistListAsync()

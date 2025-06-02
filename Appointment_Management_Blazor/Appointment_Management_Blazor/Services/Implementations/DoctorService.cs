@@ -1,4 +1,5 @@
-﻿using Appointment_Management_Blazor.Data;
+﻿using Appointment_Management_Blazor.Client.Models.DTOs;
+using Appointment_Management_Blazor.Data;
 using Appointment_Management_Blazor.Services.Interfaces;
 using Appointment_Management_Blazor.Shared;
 using Appointment_Management_Blazor.Shared.Models;
@@ -24,74 +25,89 @@ namespace Appointment_Management_Blazor.Services.Implementations
             _roleManager = roleManager;
         }
 
-        public async Task<object> GetAllDoctorsAsync(DoctorFilterModel filters)
+        // Services/DoctorService.cs
+        public async Task<DoctorListResponse> GetAllDoctorsAsync(DoctorFilterModel filters)
         {
-            int pageSize = filters.Length != 0 ? filters.Length : 10;
-            int skip = filters.Start;
-
             var query = _context.Doctors
                 .Include(d => d.ApplicationUser)
-                .Where(d => d.ApplicationUser != null)
                 .AsQueryable();
-            
 
-            if (!string.IsNullOrEmpty(filters.Gender))
-                query = query.Where(d => d.ApplicationUser.Gender == filters.Gender);
-
-            if (!string.IsNullOrEmpty(filters.Status) && bool.TryParse(filters.Status, out var boolStatus))
-                query = query.Where(d => d.Status == boolStatus);
-
-            if (!string.IsNullOrEmpty(filters.SpecialistIn))
-                query = query.Where(d => d.SpecialistIn == filters.SpecialistIn);
-
+            // Apply search filter
             if (!string.IsNullOrEmpty(filters.SearchValue))
             {
                 query = query.Where(d =>
                     d.ApplicationUser.FullName.Contains(filters.SearchValue) ||
-                    d.ApplicationUser.Gender.Contains(filters.SearchValue) ||
-                    d.SpecialistIn.Contains(filters.SearchValue));
+                    d.SpecialistIn.Contains(filters.SearchValue) ||
+                    d.ApplicationUser.Email.Contains(filters.SearchValue));
             }
 
-            var total = await query.CountAsync();
-            var sortMap = new Dictionary<string, string>
+            // Apply status filter if provided
+            if (filters.Status.HasValue)
             {
-                ["fullName"] = "ApplicationUser.FullName",
-                ["gender"] = "ApplicationUser.Gender",
-                ["specialistIn"] = "SpecialistIn",
-                ["status"] = "Status"
-            };
-
-            if (!string.IsNullOrEmpty(filters.SortColumn) && sortMap.TryGetValue(filters.SortColumn, out var mappedColumn))
-            {
-                query = query.OrderBy($"{mappedColumn} {filters.SortDirection}");
+                query = query.Where(d => d.Status == filters.Status.Value);
             }
 
-            var data = await query
-        .Skip(skip)
-        .Take(pageSize)
-        .Select(d => new
-        {
-            id = d.ApplicationUserId,
-            fullName = d.ApplicationUser.FullName,
-            gender = d.ApplicationUser.Gender,
-            email = d.ApplicationUser.Email,
-            specialistIn = d.SpecialistIn,
-            status = d.Status
-        })
-        .ToListAsync();
-
-            return new
+            // Apply gender filter if provided
+            if (!string.IsNullOrEmpty(filters.Gender))
             {
-                draw = filters.Draw,
-                recordsTotal = total,
-                recordsFiltered = total,
-                data
+                query = query.Where(d => d.ApplicationUser.Gender == filters.Gender);
+            }
+
+            // Apply specialization filter if provided
+            if (!string.IsNullOrEmpty(filters.SpecialistIn))
+            {
+                query = query.Where(d => d.SpecialistIn == filters.SpecialistIn);
+            }
+
+            // Get total count before pagination
+            var totalRecords = await query.CountAsync();
+
+            // Apply sorting
+            if (!string.IsNullOrEmpty(filters.SortColumn))
+            {
+                query = filters.SortDirection == "desc"
+                    ? query.OrderByDescending(d => EF.Property<object>(d, filters.SortColumn))
+                    : query.OrderBy(d => EF.Property<object>(d, filters.SortColumn));
+            }
+
+            // Apply pagination
+            var doctors = await query
+                .Skip(filters.Start)
+                .Take(filters.Length)
+                .Select(d => new DoctorDto
+                {
+                    Id = d.ApplicationUserId,
+                    FullName = d.ApplicationUser.FullName,
+                    Gender = d.ApplicationUser.Gender,
+                    Email = d.ApplicationUser.Email,
+                    SpecialistIn = d.SpecialistIn,
+                    Status = d.Status
+                })
+                .ToListAsync();
+
+            return new DoctorListResponse
+            {
+                Draw = filters.Draw,
+                RecordsTotal = totalRecords,
+                RecordsFiltered = totalRecords,
+                Data = doctors
             };
         }
 
 
         public async Task<(bool Success, string Message)> CreateDoctorAsync(DoctorViewModel model)
         {
+            // Validate password
+            if (string.IsNullOrWhiteSpace(model.Password) || model.Password.Length < 6)
+            {
+                return (false, "Password must be at least 6 characters long.");
+            }
+
+            if (model.Password != model.ConfirmPassword)
+            {
+                return (false, "Password and confirmation password do not match.");
+            }
+
             var existing = await _userManager.FindByEmailAsync(model.Email);
             if (existing != null)
                 return (false, "A doctor with this email already exists.");
@@ -130,9 +146,11 @@ namespace Appointment_Management_Blazor.Services.Implementations
 
         public async Task<DoctorViewModel?> GetDoctorByIdAsync(string id)
         {
-            var doctor = await _context.Doctors.Include(d => d.ApplicationUser)
-                                               .FirstOrDefaultAsync(d => d.ApplicationUserId == id);
-            if (doctor == null)
+            var doctor = await _context.Doctors
+                .Include(d => d.ApplicationUser)
+                .FirstOrDefaultAsync(d => d.ApplicationUserId == id);
+
+            if (doctor == null || doctor.ApplicationUser == null)
                 return null;
 
             return new DoctorViewModel
@@ -148,34 +166,70 @@ namespace Appointment_Management_Blazor.Services.Implementations
 
         public async Task<(bool Success, string Message)> UpdateDoctorAsync(DoctorViewModel model)
         {
-            var doctor = await _context.Doctors.Include(d => d.ApplicationUser)
-                                               .FirstOrDefaultAsync(d => d.ApplicationUserId == model.ApplicationUserId);
-            if (doctor == null)
-                return (false, "Doctor not found");
-
-            var user = doctor.ApplicationUser!;
-            user.FullName = model.FullName;
-            user.Gender = model.Gender;
-
-            var result = await _userManager.UpdateAsync(user);
-            if (!result.Succeeded)
-                return (false, string.Join("<br/>", result.Errors.Select(e => e.Description)));
-
-            if (!string.IsNullOrEmpty(model.Password))
+            try
             {
-                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-                var passResult = await _userManager.ResetPasswordAsync(user, token, model.Password);
-                if (!passResult.Succeeded)
-                    return (false, string.Join("<br/>", passResult.Errors.Select(e => e.Description)));
+                if (string.IsNullOrEmpty(model.ApplicationUserId))
+                {
+                    return (false, "User ID is required");
+                }
+
+                // Find user
+                var user = await _userManager.FindByIdAsync(model.ApplicationUserId);
+                if (user == null)
+                {
+                    // Log the ID that wasn't found
+                    Console.WriteLine($"User not found with ID: {model.ApplicationUserId}");
+                    return (false, $"User not found with ID: {model.ApplicationUserId}");
+                }
+
+                // Find doctor
+                var doctor = await _context.Doctors
+                    .FirstOrDefaultAsync(d => d.ApplicationUserId == model.ApplicationUserId);
+
+                if (doctor == null)
+                {
+                    return (false, "Doctor not found");
+                }
+
+                // Update user properties
+                user.FullName = model.FullName;
+                user.Gender = model.Gender;
+                user.Email = model.Email;
+                user.UserName = model.Email;
+                user.NormalizedEmail = model.Email.ToUpper();
+                user.NormalizedUserName = model.Email.ToUpper();
+
+                var userResult = await _userManager.UpdateAsync(user);
+                if (!userResult.Succeeded)
+                {
+                    return (false, string.Join(", ", userResult.Errors.Select(e => e.Description)));
+                }
+
+                // Update password if provided
+                if (!string.IsNullOrEmpty(model.Password))
+                {
+                    var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                    var passResult = await _userManager.ResetPasswordAsync(user, token, model.Password);
+                    if (!passResult.Succeeded)
+                    {
+                        return (false, string.Join(", ", passResult.Errors.Select(e => e.Description)));
+                    }
+                }
+
+                // Update doctor properties
+                doctor.SpecialistIn = model.SpecialistIn;
+                doctor.Status = model.Status;
+
+                _context.Doctors.Update(doctor);
+                await _context.SaveChangesAsync();
+
+                return (true, "Doctor updated successfully");
             }
-
-            doctor.SpecialistIn = model.SpecialistIn;
-            doctor.Status = model.Status;
-
-            _context.Doctors.Update(doctor);
-            await _context.SaveChangesAsync();
-
-            return (true, "Doctor updated successfully");
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating doctor: {ex}");
+                return (false, $"Error updating doctor: {ex.Message}");
+            }
         }
 
         public async Task<(bool Success, string Message)> DeleteDoctorAsync(string id)

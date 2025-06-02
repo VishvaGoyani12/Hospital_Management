@@ -1,6 +1,7 @@
 ﻿@using Appointment_Management_Blazor.Client.Helper
 @inherits LayoutComponentBase
 @inject Blazored.LocalStorage.ILocalStorageService localStorage
+@inject NavigationManager NavigationManager
 
 <div class="d-flex flex-column min-vh-100" style="background-color: #ffffff;">
     <!-- Header -->
@@ -13,6 +14,29 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarMain">
+                <!-- Left side navigation -->
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    @if (IsAuthenticated)
+                    {
+                        if (userRoles.Contains("Admin", StringComparer.OrdinalIgnoreCase))
+                        {
+                            <li class="nav-item">
+                                <NavLink class="nav-link" href="/Patient">Patient Management</NavLink>
+                            </li>
+                            <li class="nav-item">
+                                <NavLink class="nav-link" href="/Doctor">Doctor Management</NavLink>
+                            </li>
+                        }
+                        if (userRoles.Contains("Patient", StringComparer.OrdinalIgnoreCase))
+                        {
+                            <li class="nav-item">
+                                <NavLink class="nav-link" href="/PatientAppointment">Book Appointment</NavLink>
+                            </li>                           
+                        }
+                    }
+                </ul>
+
+                <!-- Right side navigation -->
                 <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                     @if (!IsAuthenticated)
                     {
@@ -30,13 +54,13 @@
                     else
                     {
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                                <i class="bi bi-person-circle me-1"></i>@UserName
+                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                                <i class="bi bi-person-circle me-1"></i>@userEmail
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
                                     <NavLink class="dropdown-item" href="/profile">
-                                        <i class="bi bi-person me-2"></i>Profile
+                                        <i class="bi bi-person me-2"></i>Update Profile
                                     </NavLink>
                                 </li>
                                 <li><hr class="dropdown-divider" /></li>
@@ -61,12 +85,10 @@
     </main>
 </div>
 
-
 @code {
     private IEnumerable<string> userRoles = Enumerable.Empty<string>();
     private string? userEmail;
     private bool IsAuthenticated = false;
-    private string UserName = "Guest";
 
     protected override async Task OnInitializedAsync()
     {
@@ -89,12 +111,12 @@
             userRoles = JwtParser.GetRolesFromToken(token);
             userEmail = JwtParser.GetEmailFromToken(token);
             IsAuthenticated = true;
-            UserName = userEmail ?? "User";
         }
         else
         {
             IsAuthenticated = false;
-            UserName = "Guest";
+            userRoles = Enumerable.Empty<string>();
+            userEmail = null;
         }
     }
 
@@ -103,10 +125,7 @@
         await localStorage.RemoveItemAsync("jwt_token");
         IsAuthenticated = false;
         userRoles = Enumerable.Empty<string>();
-        UserName = "Guest";
+        userEmail = null;
         NavigationManager.NavigateTo("/login", forceLoad: true);
     }
-
-    [Inject]
-    private NavigationManager NavigationManager { get; set; }
 }

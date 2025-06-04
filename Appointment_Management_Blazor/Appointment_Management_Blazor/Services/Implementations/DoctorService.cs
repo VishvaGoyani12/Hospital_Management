@@ -65,10 +65,40 @@ namespace Appointment_Management_Blazor.Services.Implementations
             // Apply sorting
             if (!string.IsNullOrEmpty(filters.SortColumn))
             {
-                query = filters.SortDirection == "desc"
-                    ? query.OrderByDescending(d => EF.Property<object>(d, filters.SortColumn))
-                    : query.OrderBy(d => EF.Property<object>(d, filters.SortColumn));
+                switch (filters.SortColumn)
+                {
+                    case "FullName":
+                        query = filters.SortDirection == "desc"
+                            ? query.OrderByDescending(d => d.ApplicationUser.FullName)
+                            : query.OrderBy(d => d.ApplicationUser.FullName);
+                        break;
+                    case "Gender":
+                        query = filters.SortDirection == "desc"
+                            ? query.OrderByDescending(d => d.ApplicationUser.Gender)
+                            : query.OrderBy(d => d.ApplicationUser.Gender);
+                        break;
+                    case "Email":
+                        query = filters.SortDirection == "desc"
+                            ? query.OrderByDescending(d => d.ApplicationUser.Email)
+                            : query.OrderBy(d => d.ApplicationUser.Email);
+                        break;
+                    case "SpecialistIn":
+                        query = filters.SortDirection == "desc"
+                            ? query.OrderByDescending(d => d.SpecialistIn)
+                            : query.OrderBy(d => d.SpecialistIn);
+                        break;
+                    case "Status":
+                        query = filters.SortDirection == "desc"
+                            ? query.OrderByDescending(d => d.Status)
+                            : query.OrderBy(d => d.Status);
+                        break;
+                    default:
+                        // fallback if unknown column
+                        query = query.OrderBy(d => d.ApplicationUser.FullName);
+                        break;
+                }
             }
+
 
             // Apply pagination
             var doctors = await query

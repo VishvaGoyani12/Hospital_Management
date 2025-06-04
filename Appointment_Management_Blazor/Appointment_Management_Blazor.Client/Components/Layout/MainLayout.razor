@@ -33,6 +33,12 @@
                                 <NavLink class="nav-link" href="/PatientAppointment">Book Appointment</NavLink>
                             </li>                           
                         }
+                        if (userRoles.Contains("Doctor", StringComparer.OrdinalIgnoreCase))
+                        {
+                            <li class="nav-item">
+                                <NavLink class="nav-link" href="/DoctorAppointment">Manage Appointment</NavLink>
+                            </li>
+                        }
                     }
                 </ul>
 
@@ -61,6 +67,11 @@
                                 <li>
                                     <NavLink class="dropdown-item" href="/profile">
                                         <i class="bi bi-person me-2"></i>Update Profile
+                                    </NavLink>
+                                </li>
+                                <li>
+                                    <NavLink class="dropdown-item" href="/change-password">
+                                        <i class="bi bi-lock me-2"></i>Change Password
                                     </NavLink>
                                 </li>
                                 <li><hr class="dropdown-divider" /></li>
@@ -92,6 +103,10 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // if (await localStorage.ContainKeyAsync("authToken"))
+        // {
+        //     await localStorage.RemoveItemAsync("authToken");
+        // }
         await LoadAuthState();
         NavigationManager.LocationChanged += HandleLocationChanged;
     }
@@ -105,12 +120,20 @@
     private async Task LoadAuthState()
     {
         var token = await localStorage.GetItemAsync<string>("jwt_token");
-
         if (!string.IsNullOrEmpty(token))
         {
-            userRoles = JwtParser.GetRolesFromToken(token);
-            userEmail = JwtParser.GetEmailFromToken(token);
-            IsAuthenticated = true;
+            try
+            {
+                userRoles = JwtParser.GetRolesFromToken(token);
+                userEmail = JwtParser.GetEmailFromToken(token);
+                IsAuthenticated = true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error parsing token: {ex.Message}");
+                await localStorage.RemoveItemAsync("jwt_token");
+                IsAuthenticated = false;
+            }
         }
         else
         {

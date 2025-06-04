@@ -1,9 +1,13 @@
 ﻿using Appointment_Management_Blazor.Client.Components;
+using Appointment_Management_Blazor.Client.Helper;
+using Appointment_Management_Blazor.Client.Services.Implementations;
+using Appointment_Management_Blazor.Client.Services.Interfaces;
 using Appointment_Management_Blazor.Data;
 using Appointment_Management_Blazor.Helper;
 using Appointment_Management_Blazor.Services.Implementations;
 using Appointment_Management_Blazor.Services.Interfaces;
 using Appointment_Management_Blazor.Shared;
+using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
@@ -12,11 +16,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Net;
+using System.Security.Claims;
 using System.Text;
-using Blazored.LocalStorage;
-using Appointment_Management_Blazor.Client.Helper;
-using Appointment_Management_Blazor.Client.Services.Interfaces;
-using Appointment_Management_Blazor.Client.Services.Implementations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -52,7 +53,11 @@ builder.Services.Configure<IdentityOptions>(options =>
 
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var key = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]);
+var secretKey = jwtSettings["SecretKey"]; 
+var issuer = jwtSettings["Issuer"];
+var audience = jwtSettings["Audience"];
+
+var key = Encoding.UTF8.GetBytes(secretKey);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -61,25 +66,52 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+    var secretKey = jwtSettings["SecretKey"];
+    var issuer = jwtSettings["Issuer"];
+    var audience = jwtSettings["Audience"];
+    var key = Encoding.UTF8.GetBytes(secretKey);
+
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(key)
+        ValidIssuer = issuer,
+        ValidAudience = audience,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        NameClaimType = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier",
+        RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
     };
+
     options.Events = new JwtBearerEvents
     {
+        OnAuthenticationFailed = context =>
+        {
+            Console.WriteLine($"Authentication failed: {context.Exception.Message}");
+            return Task.CompletedTask;
+        },
         OnMessageReceived = context =>
         {
-            context.Token = context.Request.Cookies["jwt_token"];
+            if (context.Request.Headers.ContainsKey("Authorization"))
+            {
+                var authHeader = context.Request.Headers["Authorization"].ToString();
+                if (authHeader.StartsWith("Bearer "))
+                {
+                    context.Token = authHeader.Substring("Bearer ".Length).Trim();
+                }
+            }
+            else if (context.Request.Cookies.ContainsKey("jwt_token"))
+            {
+                context.Token = context.Request.Cookies["jwt_token"];
+            }
             return Task.CompletedTask;
         }
     };
 });
+
+
 
 
 builder.Services.AddAuthorization(); 
@@ -93,46 +125,49 @@ builder.Services.AddControllers();
 
 // Add these after Blazored.LocalStorage
 builder.Services.AddBlazoredLocalStorage();
-builder.Services.AddScoped<AuthHeaderHandler>(); // Register the handler
+builder.Services.AddScoped<AuthHeaderHandler>(); 
 
 // Get API base URL from config
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"]
                  ?? throw new InvalidOperationException("ApiBaseUrl is not configured.");
 
 // Register named HttpClient (for authorized requests)
-builder.Services.AddHttpClient("AuthorizedClient", client =>
+builder.Services.AddHttpClient("AuthenticatedClient", client =>
 {
     client.BaseAddress = new Uri(apiBaseUrl);
 }).AddHttpMessageHandler<AuthHeaderHandler>();
 
-// Register default HttpClient (for public requests)
+// Register typed HttpClients (reusing the same base URL)
+builder.Services.AddHttpClient<IAccountClientService, AccountClientService>()
+    .ConfigureHttpClient(c => c.BaseAddress = new Uri(apiBaseUrl));
+builder.Services.AddHttpClient<IDoctorClientService, DoctorClientService>()
+    .ConfigureHttpClient(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<AuthHeaderHandler>();
+
+builder.Services.AddHttpClient<IPatientClientService, PatientClientService>()
+    .ConfigureHttpClient(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<AuthHeaderHandler>();
+
+builder.Services.AddHttpClient<IPatientAppointmentClientService, PatientAppointmentClientService>()
+    .ConfigureHttpClient(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<AuthHeaderHandler>();
+
+builder.Services.AddHttpClient<IDoctorAppointmentClientService, DoctorAppointmentClientService>()
+    .ConfigureHttpClient(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<AuthHeaderHandler>();
+
+
 builder.Services.AddScoped(sp => new HttpClient
 {
     BaseAddress = new Uri(apiBaseUrl)
 });
 
-// Register typed HttpClients (reusing the same base URL)
-builder.Services.AddHttpClient<IAccountClientService, AccountClientService>(client =>
-{
-    client.BaseAddress = new Uri(apiBaseUrl);
-});
-
-builder.Services.AddHttpClient<IDoctorClientService, DoctorClientService>("AuthorizedClient", client =>
-{
-    client.BaseAddress = new Uri(apiBaseUrl);
-}).AddHttpMessageHandler<AuthHeaderHandler>();
-
-builder.Services.AddHttpClient<IPatientClientService, PatientClientService>("AuthorizedClient", client =>
-{
-    client.BaseAddress = new Uri(apiBaseUrl);
-}).AddHttpMessageHandler<AuthHeaderHandler>();
-
-
-// Other services...
+// Other services
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IDoctorService, DoctorService>();
 builder.Services.AddScoped<IPatientService, PatientService>();
-builder.Services.AddScoped<IPatientAppointmentService, PatientAppointmentService >();
+builder.Services.AddScoped<IPatientAppointmentService, PatientAppointmentService>();
+builder.Services.AddScoped<IDoctorAppointmentService, DoctorAppointmentService>();
 
 
 builder.Services.AddHttpContextAccessor();
@@ -175,7 +210,8 @@ builder.Services.AddCors(options =>
         builder.WithOrigins("https://localhost:7066") 
                .AllowAnyMethod()
                .AllowAnyHeader()
-               .AllowCredentials();
+               .AllowCredentials()
+               .WithExposedHeaders("Authorization"); 
     });
 });
 

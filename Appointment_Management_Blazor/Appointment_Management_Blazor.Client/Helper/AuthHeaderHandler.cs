@@ -7,6 +7,7 @@ namespace Appointment_Management_Blazor.Client.Helper
     public class AuthHeaderHandler : DelegatingHandler
     {
         private readonly ILocalStorageService _localStorage;
+        private const string TokenKey = "jwt_token";
 
         public AuthHeaderHandler(ILocalStorageService localStorage)
         {
@@ -19,22 +20,25 @@ namespace Appointment_Management_Blazor.Client.Helper
         {
             try
             {
-                var token = await _localStorage.GetItemAsync<string>("authToken");
+                var token = await _localStorage.GetItemAsync<string>(TokenKey);
+                Console.WriteLine($"AuthHeaderHandler - Token: {token}");
 
                 if (!string.IsNullOrEmpty(token))
                 {
-                    // Ensure the token is properly formatted (remove quotes if present)
-                    token = token.Trim('"');
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                    Console.WriteLine("Authorization header set");
                 }
-
-                return await base.SendAsync(request, cancellationToken);
+                else
+                {
+                    Console.WriteLine("No token found in local storage");
+                }
             }
-            catch
+            catch (Exception ex)
             {
-                // If token retrieval fails, continue without it
-                return await base.SendAsync(request, cancellationToken);
+                Console.WriteLine($"Error setting auth header: {ex.Message}");
             }
+
+            return await base.SendAsync(request, cancellationToken);
         }
     }
 }

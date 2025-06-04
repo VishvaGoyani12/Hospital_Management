@@ -1,0 +1,313 @@
+﻿@page "/doctorappointment"
+@inject IDoctorAppointmentClientService AppointmentService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject ILocalStorageService LocalStorage
+
+<h3>Appointment Management</h3>
+
+@if (isLoading)
+{
+    <div class="text-center">
+        <div class="spinner-border" role="status">
+            <span class="sr-only"></span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex align-items-center flex-wrap gap-2">
+                <div>
+                    <select class="form-select w-auto" @onchange="OnPageSizeChanged" value="@pageSize" style="min-width: 130px;">
+                        <option value="10">10 per page</option>
+                        <option value="20">20 per page</option>
+                        <option value="50">50 per page</option>
+                    </select>
+                </div>
+
+                <div>
+                    <input type="text" class="form-control" placeholder="Search..." value="@searchValue" @oninput="OnSearchInput" />
+                </div>
+
+                <div>
+                    <select class="form-select" @onchange="OnStatusFilterChanged">
+                        <option value="">All Statuses</option>
+                        <option value="Pending" selected="@(statusFilter == "Pending")">Pending</option>
+                        <option value="Confirmed" selected="@(statusFilter == "Confirmed")">Confirmed</option>
+                        <option value="Cancelled" selected="@(statusFilter == "Cancelled")">Cancelled</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+            @if (appointments?.Data?.Any() == true)
+            {
+                <table class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            <th @onclick="@(() => OnSort("PatientName"))" style="cursor:pointer">
+                                Patient <i class="@GetSortIconClass("PatientName")" style="margin-left: 5px;"></i>
+                            </th>
+                            <th @onclick="@(() => OnSort("AppointmentDate"))" style="cursor:pointer">
+                                Date <i class="@GetSortIconClass("AppointmentDate")" style="margin-left: 5px;"></i>
+                            </th>
+                            <th @onclick="@(() => OnSort("Description"))" style="cursor:pointer">
+                                Description <i class="@GetSortIconClass("Description")" style="margin-left: 5px;"></i>
+                            </th>
+                            <th @onclick="@(() => OnSort("Status"))" style="cursor:pointer">
+                                Status <i class="@GetSortIconClass("Status")" style="margin-left: 5px;"></i>
+                            </th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var appointment in appointments.Data)
+                        {
+                            <tr>
+                                <td>@appointment?.PatientName</td>
+                                <td>@appointment?.AppointmentDate.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td>@appointment?.Description</td>
+                                <td>@appointment?.Status</td>
+                                <td>
+                                    @if (CanUpdate(appointment.Status))
+                                    {
+                                        <select class="form-select form-select-sm w-auto"
+                                                value="@appointment.Status"
+                                                @onchange="async e => await UpdateStatus(appointment.Id, e.Value?.ToString())">
+                                            <option disabled selected value="">Change Status</option>
+                                            <option value="Confirmed">Confirmed</option>
+                                            <option value="Cancelled">Cancelled</option>
+                                        </select>
+                                    }
+                                    else
+                                    {
+                                        @appointment.Status
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+    <div>
+        <span>Total records: @totalRecords</span>
+    </div>
+    <div>
+        <button class="btn btn-secondary me-2" @onclick="PreviousPage" disabled="@(currentPage <= 1)">Previous</button>
+        <span>Page @currentPage of @totalPages</span>
+        <button class="btn btn-secondary ms-2" @onclick="NextPage" disabled="@(currentPage >= totalPages)">Next</button>
+    </div>
+</div>
+
+            }
+            else
+            {
+                <div class="alert alert-info">No appointments found.</div>              
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private AppointmentListResponse appointments = new();
+    private bool isLoading = true;
+    private string searchValue = string.Empty;
+    private string statusFilter = string.Empty;
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalRecords = 0;
+    private int totalPages => (int)Math.Ceiling((double)totalRecords / pageSize);
+    private int doctorId;
+    
+    // Sorting
+    private string? sortColumn;
+    private string sortDirection = "asc";
+
+    // Debounce timer
+    private System.Timers.Timer? debounceTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // await LoadDoctorId();
+        await LoadAppointments();
+    }
+
+    // private async Task LoadDoctorId()
+    // {
+    //     try
+    //     {
+    //         var userId = await LocalStorage.GetItemAsync<string>("user_id");
+    //         if (string.IsNullOrEmpty(userId))
+    //         {
+    //             NavigationManager.NavigateTo("/login");
+    //             return;
+    //         }
+
+    //         doctorId = await AppointmentService.GetDoctorIdByUserIdAsync(userId);
+    //         if (doctorId <= 0)
+    //         {
+    //             NavigationManager.NavigateTo("/login");
+    //         }
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         Console.WriteLine($"Error loading doctor ID: {ex.Message}");
+    //         NavigationManager.NavigateTo("/login");
+    //     }
+    // }
+
+    private async Task LoadAppointments()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var filters = new AppointmentFilterModel
+            {
+                Draw = currentPage,
+                Start = (currentPage - 1) * pageSize,
+                Length = pageSize,
+                SearchValue = searchValue,
+                Status = statusFilter,
+                SortColumn = sortColumn,
+                SortDirection = sortDirection,
+                DoctorId = doctorId
+            };
+
+            var response = await AppointmentService.GetAllAppointmentsAsync(filters);
+
+            if (response != null)
+            {
+                appointments = response;
+                totalRecords = response.RecordsTotal;
+            }
+            else
+            {
+                appointments = new AppointmentListResponse();
+                totalRecords = 0;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading appointments: {ex.Message}");
+            appointments = new AppointmentListResponse();
+            totalRecords = 0;
+
+            if (ex.Message.Contains("401") || ex.Message.Contains("Unauthorized"))
+            {
+                NavigationManager.NavigateTo("/login");
+            }
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async void OnSearchInput(ChangeEventArgs e)
+    {
+        searchValue = e.Value?.ToString() ?? string.Empty;
+
+        debounceTimer?.Stop();
+        debounceTimer?.Dispose();
+
+        debounceTimer = new System.Timers.Timer(500);
+        debounceTimer.Elapsed += async (_, _) =>
+        {
+            debounceTimer?.Stop();
+            debounceTimer?.Dispose();
+            debounceTimer = null;
+
+            await InvokeAsync(async () =>
+            {
+                currentPage = 1;
+                await LoadAppointments();
+                StateHasChanged();
+            });
+        };
+        debounceTimer.AutoReset = false;
+        debounceTimer.Start();
+    }
+
+    private async Task OnStatusFilterChanged(ChangeEventArgs e)
+    {
+        statusFilter = e.Value?.ToString() ?? string.Empty;
+        currentPage = 1;
+        await LoadAppointments();
+    }
+
+    private async Task OnPageSizeChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var size))
+        {
+            pageSize = size;
+            currentPage = 1;
+            await LoadAppointments();
+        }
+    }
+
+    private async Task NextPage()
+    {
+        if (currentPage < totalPages)
+        {
+            currentPage++;
+            await LoadAppointments();
+        }
+    }
+
+    private async Task PreviousPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            await LoadAppointments();
+        }
+    }
+
+    private async Task UpdateStatus(int id, string? newStatus)
+    {
+        if (string.IsNullOrWhiteSpace(newStatus)) return;
+
+        var result = await AppointmentService.UpdateAppointmentStatusAsync(new UpdateStatusModel
+        {
+            Id = id,
+            Status = newStatus
+        });
+
+        if (result)
+        {
+            await LoadAppointments();
+        }
+    }
+
+    private bool CanUpdate(string status) => status == "Pending";
+
+    private void OnSort(string column)
+    {
+        if (sortColumn == column)
+        {
+            sortDirection = sortDirection == "asc" ? "desc" : "asc";
+        }
+        else
+        {
+            sortColumn = column;
+            sortDirection = "asc";
+        }
+        currentPage = 1;
+        _ = LoadAppointments();
+    }
+
+    private string GetSortIconClass(string column)
+    {
+        if (sortColumn != column)
+            return "bi bi-chevron-expand text-muted";
+        
+        return sortDirection == "asc" ? "bi bi-caret-up-fill text-primary" : "bi bi-caret-down-fill text-primary";
+    }
+}

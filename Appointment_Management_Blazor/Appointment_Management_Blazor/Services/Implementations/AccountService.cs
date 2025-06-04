@@ -21,19 +21,22 @@ namespace Appointment_Management_Blazor.Services.Implementations
         private readonly IEmailSender _emailSender;
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<AccountService> _logger;
 
         public AccountService(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
             IEmailSender emailSender,
             ApplicationDbContext context,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            ILogger<AccountService> logger)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _emailSender = emailSender;
             _context = context;
             _configuration = configuration;
+            _logger = logger;
         }
 
         public async Task<AuthResponse> RegisterAsync(RegisterViewModel model)
@@ -73,10 +76,15 @@ namespace Appointment_Management_Blazor.Services.Implementations
                 await _context.SaveChangesAsync();
 
                 var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                var confirmationUrl = $"{_configuration["BaseUrl"]}/api/account/confirm-email?userId={user.Id}&token={HttpUtility.UrlEncode(token)}";
 
+                var confirmationUrl = $"{_configuration["ClientUrl"]}/api/account/confirm-email?userId={user.Id}&token={HttpUtility.UrlEncode(token)}";
+                
                 await _emailSender.SendEmailAsync(user.Email, "Confirm your email",
-                    $"Click here to confirm: <a href='{confirmationUrl}'>Confirm</a>");
+$@"Please confirm your email by clicking the link below:<br/><br/>
+<a href='{confirmationUrl}'>Click to confirm your email</a><br/><br/>
+If the above link doesn't work, copy and paste this into your browser:<br/>
+{confirmationUrl}");
+
 
                 return new AuthResponse { IsSuccess = true, Message = "Registration successful! Please check your email to confirm your account." };
             }
@@ -127,36 +135,228 @@ namespace Appointment_Management_Blazor.Services.Implementations
 
         private async Task<string> GenerateJwtToken(ApplicationUser user)
         {
-            var roles = await _userManager.GetRolesAsync(user);
+            var userRoles = await _userManager.GetRolesAsync(user);
 
-            var claims = new List<Claim>
+            var authClaims = new List<Claim>
     {
-        new Claim(JwtRegisteredClaimNames.Sub, user.Email),
+        new Claim(JwtRegisteredClaimNames.Sub, user.Id),                  
+        new Claim(ClaimTypes.NameIdentifier, user.Id),                    
         new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-        new Claim(ClaimTypes.NameIdentifier, user.Id),
-        new Claim(ClaimTypes.Email, user.Email),
-        new Claim("email", user.Email),
-        new Claim(ClaimTypes.Name, user.UserName)
+        new Claim(JwtRegisteredClaimNames.Email, user.Email),
+        new Claim(ClaimTypes.Email, user.Email)
     };
 
-            foreach (var role in roles)
+            foreach (var userRole in userRoles)
             {
-                claims.Add(new Claim(ClaimTypes.Role, role));
+                authClaims.Add(new Claim(ClaimTypes.Role, userRole));
+                // Also add with the full URI if needed
+                authClaims.Add(new Claim("http://schemas.microsoft.com/ws/2008/06/identity/claims/role", userRole));
             }
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]));
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["JwtSettings:Issuer"],
                 audience: _configuration["JwtSettings:Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(1),
-                signingCredentials: creds
+                expires: DateTime.UtcNow.AddHours(3),
+                claims: authClaims,
+                signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
+        public async Task<AuthResponse> ForgotPasswordAsync(string email)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(email))
+                {
+                    return new AuthResponse { IsSuccess = false, Message = "Email is required." };
+                }
+
+                var user = await _userManager.FindByEmailAsync(email);
+                if (user == null)
+                {
+                    return new AuthResponse { IsSuccess = false, Message = "No user found with this email." };
+                }
+
+                if (!user.EmailConfirmed)
+                {
+                    return new AuthResponse { IsSuccess = false, Message = "Email is not confirmed." };
+                }
+
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var resetUrl = $"{_configuration["ClientUrl"]}/reset-password?token={HttpUtility.UrlEncode(token)}&email={HttpUtility.UrlEncode(email)}";
+
+                await _emailSender.SendEmailAsync(email, "Reset Password",
+    $@"Please reset your password by clicking the link below:<br/><br/>
+    <a href='{resetUrl}'>Click to reset your password</a><br/><br/>
+    If the above link doesn't work, copy and paste this into your browser:<br/>
+    {resetUrl.Replace("&", "&amp;")}");
+
+                return new AuthResponse { IsSuccess = true, Message = "Password reset link has been sent to your email." };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in ForgotPasswordAsync");
+                return new AuthResponse
+                {
+                    IsSuccess = false,
+                    Message = $"An error occurred: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<AuthResponse> ResetPasswordAsync(ResetPasswordViewModel model)
+        {
+            try
+            {
+                if (model == null)
+                {
+                    return new AuthResponse { IsSuccess = false, Message = "Invalid request." };
+                }
+
+                var user = await _userManager.FindByEmailAsync(model.Email);
+                if (user == null)
+                {
+                    return new AuthResponse { IsSuccess = false, Message = "User not found." };
+                }
+
+                var result = await _userManager.ResetPasswordAsync(user, model.Token, model.Password);
+                if (result.Succeeded)
+                {
+                    return new AuthResponse { IsSuccess = true, Message = "Password has been reset successfully." };
+                }
+
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                return new AuthResponse { IsSuccess = false, Message = errors };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in ResetPasswordAsync");
+                return new AuthResponse
+                {
+                    IsSuccess = false,
+                    Message = $"An error occurred: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<AuthResponse> ChangePasswordAsync(string userId, ChangePasswordViewModel model)
+        {
+            try
+            {
+                if (model == null)
+                {
+                    return new AuthResponse { IsSuccess = false, Message = "Invalid request." };
+                }
+
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null)
+                {
+                    return new AuthResponse { IsSuccess = false, Message = "User not found." };
+                }
+
+                var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
+                if (result.Succeeded)
+                {
+                    return new AuthResponse { IsSuccess = true, Message = "Password has been changed successfully." };
+                }
+
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                return new AuthResponse { IsSuccess = false, Message = errors };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in ChangePasswordAsync");
+                return new AuthResponse
+                {
+                    IsSuccess = false,
+                    Message = $"An error occurred: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<ProfileResponse> GetProfileAsync(string userId)
+        {
+            try
+            {
+                _logger.LogInformation($"Looking for user with ID: {userId}");
+
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null)
+                {
+                    _logger.LogWarning($"User not found with ID: {userId}");
+                    return new ProfileResponse
+                    {
+                        IsSuccess = false,
+                        Message = $"User with ID {userId} not found in database"
+                    };
+                }
+
+                _logger.LogInformation($"Found user: {user.Email}");
+
+                var profile = new UpdateProfileViewModel
+                {
+                    FullName = user.FullName,
+                    Gender = user.Gender,
+                    Email = user.Email
+                };
+
+                return new ProfileResponse
+                {
+                    IsSuccess = true,
+                    Message = "Profile retrieved successfully.",
+                    Profile = profile
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error in GetProfileAsync for user ID: {userId}");
+                return new ProfileResponse
+                {
+                    IsSuccess = false,
+                    Message = $"An error occurred: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<AuthResponse> UpdateProfileAsync(string userId, UpdateProfileViewModel model)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null)
+                {
+                    return new AuthResponse { IsSuccess = false, Message = "User not found." };
+                }
+
+                user.FullName = model.FullName;
+                user.Gender = model.Gender;
+                user.Email = model.Email;
+                user.UserName = model.Email;
+
+                var result = await _userManager.UpdateAsync(user);
+                if (result.Succeeded)
+                {
+                    return new AuthResponse { IsSuccess = true, Message = "Profile updated successfully." };
+                }
+
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                return new AuthResponse { IsSuccess = false, Message = errors };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in UpdateProfileAsync");
+                return new AuthResponse
+                {
+                    IsSuccess = false,
+                    Message = $"An error occurred: {ex.Message}"
+                };
+            }
+        }
+
 
     }
 

@@ -2,6 +2,7 @@
 @inject IPatientAppointmentClientService AppointmentService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
+@inject ILocalStorageService LocalStorage
 
 <h3>Appointment Management</h3>
 
@@ -9,7 +10,7 @@
 {
     <div class="text-center">
         <div class="spinner-border" role="status">
-            <span class="sr-only">Loading....</span>
+            <span class="sr-only"></span>
         </div>
     </div>
 }
@@ -17,39 +18,58 @@ else
 {
     <div class="card">
         <div class="card-header">
-            <div class="row">
-                <div class="col-md-6">
-@*                     <button class="btn btn-primary" @onclick="AddNewAppointment">Add New Appointment</button>
- *@                </div>
-                <div class="col-md-6">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <select class="form-control" @bind="StatusFilter">
-                                <option value="">All Statuses</option>
-                                <option value="Pending">Pending</option>
-                                <option value="Confirmed">Confirmed</option>
-                                <option value="Cancelled">Cancelled</option>
-                                <option value="Completed">Completed</option>
-                            </select>
-                        </div>
-                        <div class="col-md-8">
-                            <input type="text" class="form-control" placeholder="Search..." @bind="searchValue" @bind:event="oninput" />
-                        </div>
-                    </div>
+            <!-- Single row for all controls -->
+            <div class="d-flex align-items-center flex-wrap gap-2">
+                <!-- Per page dropdown - leftmost -->
+                <div>
+                    <select class="form-select w-auto" @onchange="OnPageSizeChanged" value="@pageSize" style="min-width: 130px;">
+                        <option value="10">10 per page</option>
+                        <option value="20">20 per page</option>
+                        <option value="50">50 per page</option>
+                    </select>
+                </div>
+
+                <!-- Search -->
+                <div>
+                    <input type="text" class="form-control" placeholder="Search..." value="@searchValue" @oninput="OnSearchInput" />
+                </div>
+
+                <!-- Status filter -->
+                <div>
+                    <select class="form-select" @onchange="OnStatusFilterChanged">
+                        <option value="">All Statuses</option>
+                        <option value="Pending" selected="@(statusFilter == "Pending")">Pending</option>
+                        <option value="Confirmed" selected="@(statusFilter == "Confirmed")">Confirmed</option>
+                        <option value="Cancelled" selected="@(statusFilter == "Cancelled")">Cancelled</option>
+                    </select>
+                </div>
+                <div class="ms-auto">
+                    <button class="btn btn-primary" @onclick="AddNewAppointment">Add New Appointment</button>
                 </div>
             </div>
         </div>
+
         <div class="card-body">
             @if (appointments?.Data?.Any() == true)
             {
                 <table class="table table-striped table-bordered">
                     <thead>
                         <tr>
-                            <th>Patient</th>
-                            <th>Doctor</th>
-                            <th>Date</th>
-                            <th>Description</th>
-                            <th>Status</th>
+                            <th @onclick="@(() => OnSort("PatientName"))" style="cursor:pointer">
+                                Patient <i class="@GetSortIconClass("PatientName")" style="margin-left: 5px;"></i>
+                            </th>
+                            <th @onclick="@(() => OnSort("DoctorName"))" style="cursor:pointer">
+                                Doctor <i class="@GetSortIconClass("DoctorName")" style="margin-left: 5px;"></i>
+                            </th>
+                            <th @onclick="@(() => OnSort("AppointmentDate"))" style="cursor:pointer">
+                                Date <i class="@GetSortIconClass("AppointmentDate")" style="margin-left: 5px;"></i>
+                            </th>
+                            <th @onclick="@(() => OnSort("Description"))" style="cursor:pointer">
+                                Description <i class="@GetSortIconClass("Description")" style="margin-left: 5px;"></i>
+                            </th>
+                            <th @onclick="@(() => OnSort("Status"))" style="cursor:pointer">
+                                Status <i class="@GetSortIconClass("Status")" style="margin-left: 5px;"></i>
+                            </th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -57,91 +77,84 @@ else
                         @foreach (var appointment in appointments.Data)
                         {
                             <tr>
-                                <td>@appointment.PatientName</td>
-                                <td>@appointment.DoctorName</td>
-                                <td>@appointment.AppointmentDateString</td>
-                                <td>@appointment.Description</td>
-                                <td>@appointment.Status</td>
-                               @*  <td>
+                                <td>@appointment?.PatientName</td>
+                                <td>@appointment?.DoctorName</td>
+                                <td>@appointment?.AppointmentDateString</td>
+                                <td>@appointment?.Description</td>
+                                <td>@appointment?.Status</td>
+                                <td>
                                     <button class="btn btn-info btn-sm" @onclick="() => EditAppointment(appointment.Id)">Edit</button>
-                                    <button class="btn btn-danger btn-sm ml-2" @onclick="() => DeleteAppointment(appointment.Id)">Delete</button>
-                                </td> *@
+                                    <button class="btn btn-danger btn-sm ms-2" @onclick="() => DeleteAppointment(appointment?.Id)">Delete</button>
+                                </td>
                             </tr>
                         }
                     </tbody>
                 </table>
-                <div class="row">
-                    <div class="col-md-6">
-                        <span>Total records: @totalRecords</span>
-                    </div>
-                    <div class="col-md-6 text-right">
-                        <button class="btn btn-secondary" @onclick="PreviousPage" disabled="@(currentPage <= 1)">Previous</button>
-                        <span class="mx-2">Page @currentPage of @((int)Math.Ceiling((double)totalRecords / pageSize))</span>
-                        <button class="btn btn-secondary" @onclick="NextPage" disabled="@(currentPage* pageSize >= totalRecords)">Next</button>
-                    </div>
-                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+    <div>
+        <span>Total records: @totalRecords</span>
+    </div>
+    <div>
+        <button class="btn btn-secondary me-2" @onclick="PreviousPage" disabled="@(currentPage <= 1)">Previous</button>
+        <span>Page @currentPage of @totalPages</span>
+        <button class="btn btn-secondary ms-2" @onclick="NextPage" disabled="@(currentPage >= totalPages)">Next</button>
+    </div>
+</div>
+
             }
             else
             {
-                <div class="alert alert-info">No appointments found.</div>
+                <div class="alert alert-info">No appointments found.</div>              
             }
         </div>
     </div>
 }
 
-@* @if (showDialog)
+@if (showDialog)
 {
     <div class="modal" style="display:block; background-color: rgba(0,0,0,0.5);">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">@(selectedAppointmentId == 0 ? "Add New Appointment" : "Edit Appointment")</h5>
-                    <button type="button" class="close" @onclick="CloseDialog">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+                    <button type="button" class="btn-close" @onclick="CloseDialog" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <EditForm Model="appointmentModel" OnValidSubmit="HandleValidSubmit">
                         <DataAnnotationsValidator />
                         <ValidationSummary />
 
-                        <div class="form-group">
-                            <label for="appointmentDate">Appointment Date</label>
-                            <InputDate id="appointmentDate" class="form-control" @bind-Value="appointmentModel.AppointmentDate" />
+                        <div class="form-group mb-3">
+                            <label for="patient">Patient</label>
+                            <input id="patient" class="form-control" readonly value="@currentPatientName" />
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="appointmentDate">Appointment Date & Time</label>
+                            <input type="datetime-local" id="appointmentDate" class="form-control"
+                            value="@appointmentModel.AppointmentDate.ToString("yyyy-MM-ddTHH:mm")"
+                                   @onchange="OnAppointmentDateChanged" />
                             <ValidationMessage For="@(() => appointmentModel.AppointmentDate)" />
                         </div>
 
-                        <div class="form-group">
+                        <div class="form-group mb-3">
                             <label for="doctor">Doctor</label>
-                            <select id="doctor" class="form-control" @bind="appointmentModel.DoctorId" @onchange="DoctorChanged">
-    <option value="">Select Doctor</option>
-    @foreach (var doctor in availableDoctors)
-    {
-        <option value="@doctor.Id">@doctor.FullName</option>
-    }
-</select>
-
+                            <select id="doctor" class="form-control" value="@appointmentModel.DoctorId" @onchange="DoctorChanged">
+                                <option value="">Select Doctor</option>
+                                @foreach (var doctor in availableDoctors)
+                                {
+                                    <option value="@doctor.Id">@doctor.FullName</option>
+                                }
+                            </select>
                             <ValidationMessage For="@(() => appointmentModel.DoctorId)" />
                         </div>
 
-                        <div class="form-group">
+                        <div class="form-group mb-3">
                             <label for="description">Description</label>
                             <InputTextArea id="description" class="form-control" @bind-Value="appointmentModel.Description" />
                             <ValidationMessage For="@(() => appointmentModel.Description)" />
                         </div>
-
-                        @if (selectedAppointmentId != 0)
-                        {
-                            <div class="form-group">
-                                <label for="status">Status</label>
-                                <select id="status" class="form-control" @bind="appointmentModel.Status">
-                                    <option value="Pending">Pending</option>
-                                    <option value="Confirmed">Confirmed</option>
-                                    <option value="Cancelled">Cancelled</option>
-                                    <option value="Completed">Completed</option>
-                                </select>
-                            </div>
-                        }
 
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" @onclick="CloseDialog">Cancel</button>
@@ -152,25 +165,62 @@ else
             </div>
         </div>
     </div>
-} *@
+}
 
 @code {
     private AppointmentListResponse appointments = new();
     private AppointmentViewModel appointmentModel = new();
-    private List<DoctorDropdownDto> availableDoctors = new();
+    private List<DoctorViewModel> availableDoctors = new();
+
     private int selectedAppointmentId = 0;
     private bool showDialog = false;
     private bool isLoading = true;
     private string searchValue = string.Empty;
-    private string StatusFilter = "";
+    private string statusFilter = string.Empty;
     private int currentPage = 1;
     private int pageSize = 10;
     private int totalRecords = 0;
+    private int totalPages => (int)Math.Ceiling((double)totalRecords / pageSize);
+    
+    // Sorting
+    private string? sortColumn;
+    private string sortDirection = "asc";
+
+    private string currentPatientName = string.Empty;
+    private int currentPatientId = 0;
+
+    // Debounce timer
+    private System.Timers.Timer? debounceTimer;
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadCurrentPatient();
         await LoadAppointments();
         await LoadDoctors();
+    }
+
+    private async Task LoadCurrentPatient()
+    {
+        try
+        {
+            var response = await AppointmentService.GetCurrentPatientInfo();
+            if (response != null)
+            {
+                currentPatientName = response.FullName;
+                currentPatientId = response.Id;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading patient info: {ex.Message}");
+        }
+    }
+    private void OnAppointmentDateChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var dt))
+        {
+            appointmentModel.AppointmentDate = dt;
+        }
     }
 
     private async Task LoadAppointments()
@@ -180,22 +230,56 @@ else
 
         try
         {
+            var token = await LocalStorage.GetItemAsync<string>("jwt_token");
+            if (string.IsNullOrEmpty(token))
+            {
+                NavigationManager.NavigateTo("/login");
+                return;
+            }
+
             var filters = new AppointmentFilterModel
             {
                 Draw = currentPage,
                 Start = (currentPage - 1) * pageSize,
                 Length = pageSize,
                 SearchValue = searchValue,
-                Status = StatusFilter
+                Status = statusFilter,
+                SortColumn = sortColumn,
+                SortDirection = sortDirection,
+                PatientId = currentPatientId
             };
 
-            appointments = await AppointmentService.GetAllAppointmentsAsync(filters);
+            var response = await AppointmentService.GetAllAppointmentsAsync(filters);
+            
+            appointments = new AppointmentListResponse
+            {
+                Data = response.Data.Select(a => new AppointmentDto
+                {
+                    Id = a.Id,
+                    PatientId = a.PatientId,
+                    DoctorId = a.DoctorId,
+                    PatientName = a.PatientName,
+                    DoctorName = a.DoctorName,
+                    AppointmentDate = a.AppointmentDate,
+                    Description = a.Description,
+                    Status = a.Status
+                }).ToList(),
+                RecordsTotal = response.RecordsTotal,
+                RecordsFiltered = response.RecordsFiltered,
+                Draw = response.Draw
+            };
+
             totalRecords = appointments.RecordsTotal;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading appointments: {ex.Message}");
-            appointments = new AppointmentListResponse();
+            appointments = new AppointmentListResponse { Data = new List<AppointmentDto>() };
+
+            if (ex.Message.Contains("401") || ex.Message.Contains("Unauthorized"))
+            {
+                NavigationManager.NavigateTo("/login");
+            }
         }
         finally
         {
@@ -206,66 +290,129 @@ else
 
     private async Task LoadDoctors(DateTime? selectedDate = null)
     {
-        availableDoctors = await AppointmentService.GetAvailableDoctorsAsync(
-            selectedDate ?? appointmentModel.AppointmentDate, 
-            appointmentModel.DoctorId > 0 ? appointmentModel.DoctorId : null);
+        try
+        {
+            var date = selectedDate ?? DateTime.Now;
+            availableDoctors = await AppointmentService.GetAvailableDoctorsAsync(date, appointmentModel.DoctorId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading doctors: {ex.Message}");
+            availableDoctors = new List<DoctorViewModel>();
+        }
     }
 
-    private async Task DoctorChanged(ChangeEventArgs e)
+    private async void OnSearchInput(ChangeEventArgs e)
     {
-        if (int.TryParse(e.Value?.ToString(), out int doctorId))
-        {
-            appointmentModel.DoctorId = doctorId;
-            await LoadDoctors();
-        }
-        else
-        {
-            appointmentModel.DoctorId = null;
-        }
+        searchValue = e.Value?.ToString() ?? string.Empty;
 
+        debounceTimer?.Stop();
+        debounceTimer?.Dispose();
+
+        debounceTimer = new System.Timers.Timer(500);
+        debounceTimer.Elapsed += async (_, _) =>
+        {
+            debounceTimer?.Stop();
+            debounceTimer?.Dispose();
+            debounceTimer = null;
+
+            await InvokeAsync(async () =>
+            {
+                currentPage = 1;
+                await LoadAppointments();
+                StateHasChanged();
+            });
+        };
+        debounceTimer.AutoReset = false;
+        debounceTimer.Start();
     }
 
-    // private void AddNewAppointment()
-    // {
-    //     appointmentModel = new AppointmentViewModel
-    //     {
-    //         AppointmentDate = DateTime.Now.AddDays(1)
-    //     };
-    //     selectedAppointmentId = 0;
-    //     showDialog = true;
-    // }
+    private async Task OnStatusFilterChanged(ChangeEventArgs e)
+    {
+        statusFilter = e.Value?.ToString() ?? string.Empty;
+        currentPage = 1;
+        await LoadAppointments();
+    }
 
-    // private async Task EditAppointment(int id)
-    // {
-    //     var appointment = await AppointmentService.GetAppointmentByIdAsync(id);
-    //     if (appointment != null)
-    //     {
-    //         appointmentModel = new AppointmentViewModel
-    //         {
-    //             Id = appointment.Id,
-    //             AppointmentDate = appointment.AppointmentDate,
-    //             Description = appointment.Description,
-    //             Status = appointment.Status,
-    //             DoctorId = appointment.DoctorId
-    //         };
-    //         selectedAppointmentId = id;
-    //         await LoadDoctors(appointmentModel.AppointmentDate);
-    //         showDialog = true;
-    //     }
-    // }
+    private async Task OnPageSizeChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var size))
+        {
+            pageSize = size;
+            currentPage = 1;
+            await LoadAppointments();
+        }
+    }
 
-    // private async Task DeleteAppointment(int id)
-    // {
-    //     bool confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this appointment?");
-    //     if (confirm)
-    //     {
-    //         var result = await AppointmentService.DeleteAppointmentAsync(id);
-    //         if (result.Success)
-    //         {
-    //             await LoadAppointments();
-    //         }
-    //     }
-    // }
+    private async Task NextPage()
+    {
+        if (currentPage < totalPages)
+        {
+            currentPage++;
+            await LoadAppointments();
+        }
+    }
+
+    private async Task PreviousPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            await LoadAppointments();
+        }
+    }
+
+    private async Task AddNewAppointment()
+    {
+        appointmentModel = new AppointmentViewModel
+        {
+            AppointmentDate = DateTime.Now.AddDays(1),
+            PatientId = currentPatientId,
+            PatientName = currentPatientName,
+            Status = "Pending"
+        };
+        selectedAppointmentId = 0;
+        await LoadDoctors(appointmentModel.AppointmentDate);
+        showDialog = true;
+    }
+
+
+    private async Task EditAppointment(int id)
+    {
+        var appointment = await AppointmentService.GetAppointmentByIdAsync(id);
+        if (appointment != null)
+        {
+            appointmentModel = new AppointmentViewModel
+            {
+                Id = appointment.Id,
+                DoctorId = appointment.DoctorId,
+                AppointmentDate = appointment.AppointmentDate,
+                Description = appointment.Description,
+                Status = appointment.Status,
+                PatientId = appointment.PatientId,
+                PatientName = appointment.PatientName
+            };
+
+            selectedAppointmentId = id;
+            await LoadDoctors(appointmentModel.AppointmentDate);
+            showDialog = true;
+        }
+    }
+
+    private async Task DeleteAppointment(int? id)
+    {
+        if (!id.HasValue) return;
+
+        bool confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this appointment?");
+        if (confirm)
+        {
+            var result = await AppointmentService.DeleteAppointmentAsync(id.Value);
+            if (result.Success)
+            {
+                await LoadAppointments();
+            }
+        }
+    }
 
     private async Task HandleValidSubmit()
     {
@@ -303,18 +450,35 @@ else
         showDialog = false;
     }
 
-    private async Task NextPage()
+    private async Task DoctorChanged(ChangeEventArgs e)
     {
-        currentPage++;
-        await LoadAppointments();
+        if (int.TryParse(e.Value?.ToString(), out int doctorId))
+        {
+            appointmentModel.DoctorId = doctorId;
+            await LoadDoctors(appointmentModel.AppointmentDate);
+        }
     }
 
-    private async Task PreviousPage()
+    private void OnSort(string column)
     {
-        if (currentPage > 1)
+        if (sortColumn == column)
         {
-            currentPage--;
-            await LoadAppointments();
+            sortDirection = sortDirection == "asc" ? "desc" : "asc";
         }
+        else
+        {
+            sortColumn = column;
+            sortDirection = "asc";
+        }
+        currentPage = 1;
+        _ = LoadAppointments();
+    }
+
+    private string GetSortIconClass(string column)
+    {
+        if (sortColumn != column)
+            return "bi bi-chevron-expand text-muted";
+        
+        return sortDirection == "asc" ? "bi bi-caret-up-fill text-primary" : "bi bi-caret-down-fill text-primary";
     }
 }

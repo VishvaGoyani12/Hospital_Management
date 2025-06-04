@@ -55,9 +55,27 @@ namespace Appointment_Management_Blazor.Services.Implementations
 
                 var total = await query.CountAsync();
 
+                // Handle sorting
                 if (!string.IsNullOrEmpty(filters.SortColumn) && !string.IsNullOrEmpty(filters.SortDirection))
                 {
-                    query = query.OrderBy($"{filters.SortColumn} {filters.SortDirection}");
+                    // Special handling for navigation properties
+                    if (filters.SortColumn == "PatientName")
+                    {
+                        query = filters.SortDirection == "asc"
+                            ? query.OrderBy(a => a.Patient.ApplicationUser.FullName)
+                            : query.OrderByDescending(a => a.Patient.ApplicationUser.FullName);
+                    }
+                    else if (filters.SortColumn == "DoctorName")
+                    {
+                        query = filters.SortDirection == "asc"
+                            ? query.OrderBy(a => a.Doctor.ApplicationUser.FullName)
+                            : query.OrderByDescending(a => a.Doctor.ApplicationUser.FullName);
+                    }
+                    else
+                    {
+                        // For other columns, use dynamic sorting
+                        query = query.OrderBy($"{filters.SortColumn} {filters.SortDirection}");
+                    }
                 }
                 else
                 {
@@ -88,7 +106,6 @@ namespace Appointment_Management_Blazor.Services.Implementations
                 throw;
             }
         }
-
         public async Task<AppointmentViewModel?> GetAppointmentByIdAsync(int id)
         {
             try
@@ -117,11 +134,15 @@ namespace Appointment_Management_Blazor.Services.Implementations
             }
         }
 
-        /*
+
         public async Task<(bool Success, string Message)> CreateAppointmentAsync(AppointmentViewModel vm)
         {
             try
             {
+                if (vm.PatientId <= 0)
+                {
+                    return (false, "Patient ID is required.");
+                }
                 var patient = await _context.Patients.FindAsync(vm.PatientId);
                 if (patient == null)
                 {
@@ -215,6 +236,12 @@ namespace Appointment_Management_Blazor.Services.Implementations
                     return (false, "Appointment not found.");
                 }
 
+                // Don't allow changing patient ID
+                if (vm.PatientId != appointment.PatientId)
+                {
+                    return (false, "Cannot change patient for an existing appointment.");
+                }
+
                 bool isDuplicate = await _context.Appointments.AnyAsync(a =>
                     a.Id != vm.Id &&
                     a.DoctorId == vm.DoctorId &&
@@ -226,10 +253,10 @@ namespace Appointment_Management_Blazor.Services.Implementations
                     return (false, "This appointment already exists.");
                 }
 
+                // Only update these fields - don't change status
                 appointment.DoctorId = vm.DoctorId;
                 appointment.AppointmentDate = vm.AppointmentDate;
                 appointment.Description = vm.Description;
-                appointment.Status = vm.Status;
 
                 await _context.SaveChangesAsync();
                 return (true, "Appointment updated successfully.");
@@ -239,7 +266,7 @@ namespace Appointment_Management_Blazor.Services.Implementations
                 return (false, $"Error updating appointment: {ex.Message}");
             }
         }
-        */
+
 
         public async Task<(bool Success, string Message)> DeleteAppointmentAsync(int id)
         {
@@ -261,7 +288,7 @@ namespace Appointment_Management_Blazor.Services.Implementations
             }
         }
 
-        /*
+
         public async Task<List<DoctorViewModel>> GetAvailableDoctorsAsync(DateTime? selectedDate, int? selectedDoctorId)
         {
             try
@@ -296,7 +323,7 @@ namespace Appointment_Management_Blazor.Services.Implementations
                 throw;
             }
         }
-        */
+
 
         public async Task<int> GetPatientIdByUserId(string userId)
         {

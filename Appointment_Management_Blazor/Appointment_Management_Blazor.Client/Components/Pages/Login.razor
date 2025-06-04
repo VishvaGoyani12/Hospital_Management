@@ -3,6 +3,12 @@
 @inject NavigationManager NavigationManager
 @inject Blazored.LocalStorage.ILocalStorageService localStorage
 
+@if (!string.IsNullOrEmpty(confirmationMessage))
+{
+    <div class="alert alert-success">
+        @confirmationMessage
+    </div>
+}
 
 <section class="py-5">
     <div class="container">
@@ -79,8 +85,25 @@
 @code {
     private LoginViewModel loginModel = new LoginViewModel();
     private string message = string.Empty;
+    private string? confirmationMessage;
     private bool isSuccess = false;
     private bool isProcessing = false;
+
+    // In login.razor.cs
+    protected override void OnInitialized()
+    {
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+
+        if (query.TryGetValue("confirmed", out var confirmed) && confirmed == "true")
+        {
+            confirmationMessage = "Your email has been confirmed. You can now log in.";
+        }
+        else if (query.TryGetValue("error", out var error))
+        {
+            confirmationMessage = $"Email confirmation failed: {error}";
+        }
+    }
 
     private async Task HandleLogin()
     {
@@ -97,6 +120,10 @@
             if (result.IsSuccess && !string.IsNullOrEmpty(result.Token))
             {
                 // Store token first
+                await localStorage.RemoveItemAsync("authToken");
+                await localStorage.RemoveItemAsync("jwt_token");
+
+                // Store the new token with consistent key
                 await localStorage.SetItemAsync("jwt_token", result.Token);
 
                 // Parse roles

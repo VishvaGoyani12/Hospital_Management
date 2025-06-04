@@ -1,7 +1,9 @@
 ﻿using Appointment_Management_Blazor.Client.Models.DTOs;
 using Appointment_Management_Blazor.Client.Services.Interfaces;
 using Appointment_Management_Blazor.Shared.Models;
+using Blazored.LocalStorage;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 
@@ -10,16 +12,30 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
     public class PatientClientService : IPatientClientService
     {
         private readonly HttpClient _httpClient;
+        private readonly ILocalStorageService _localStorage;
 
-        public PatientClientService(HttpClient httpClient)
+        public PatientClientService(HttpClient httpClient, ILocalStorageService localStorage)
         {
             _httpClient = httpClient;
+            _localStorage = localStorage;
+        }
+
+        private async Task AddJwtTokenAsync()
+        {
+            var token = await _localStorage.GetItemAsStringAsync("jwt_token");
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                token = token.Replace("\"", ""); 
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            }
         }
 
         public async Task<PatientListResponse> GetAllPatientsAsync(PatientFilterModel filters)
         {
             try
             {
+                await AddJwtTokenAsync();
+
                 var query = $"api/patient/GetAll?Draw={filters.Draw}&Start={filters.Start}&Length={filters.Length}&SearchValue={filters.SearchValue}";
 
                 if (!string.IsNullOrEmpty(filters.Gender))
@@ -61,11 +77,12 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
             }
         }
 
-
         public async Task<PatientDto> GetPatientByIdAsync(int id)
         {
             try
             {
+                await AddJwtTokenAsync();
+
                 var response = await _httpClient.GetAsync($"api/patient/Edit/{id}");
 
                 if (response.IsSuccessStatusCode)
@@ -88,6 +105,8 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
         {
             try
             {
+                await AddJwtTokenAsync();
+
                 var response = await _httpClient.PostAsJsonAsync("api/patient/Edit", model);
 
                 if (response.IsSuccessStatusCode)
@@ -118,6 +137,8 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
         {
             try
             {
+                await AddJwtTokenAsync();
+
                 var response = await _httpClient.DeleteAsync($"api/patient/Delete/{id}");
 
                 if (response.IsSuccessStatusCode)
@@ -143,6 +164,5 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
                 };
             }
         }
-
     }
 }

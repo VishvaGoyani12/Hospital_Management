@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Appointment_Management_Blazor.Shared.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,5 +13,10 @@ namespace Appointment_Management_Blazor.Shared.HelperModel
         public string Message { get; set; }
         public string Token { get; set; }
         public Dictionary<string, string[]>? Errors { get; set; }  // new property
+    }
+
+    public class ProfileResponse : AuthResponse
+    {
+        public UpdateProfileViewModel Profile { get; set; }
     }
 }

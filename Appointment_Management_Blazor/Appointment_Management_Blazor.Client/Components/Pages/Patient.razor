@@ -11,7 +11,7 @@
 {
     <div class="text-center">
         <div class="spinner-border" role="status">
-            <span class="sr-only">Loading....</span>
+            <span class="sr-only"></span>
         </div>
     </div>
 }
@@ -19,24 +19,61 @@ else
 {
     <div class="card">
         <div class="card-header">
-            <div class="row">              
-                <div class="col-md-6 text-right">
-                    <input type="text" class="form-control" placeholder="Search..."
-                           value="@searchValue"
-                          @oninput="OnSearchInputChanged" />
+            <!-- Single row for all controls -->
+            <div class="d-flex align-items-center flex-wrap gap-2">
+                <!-- Per page dropdown - leftmost -->
+                <div>
+                    <select class="form-select w-auto" @onchange="OnPageSizeChanged" value="@pageSize" style="min-width: 130px;">
+                        <option value="10">10 per page</option>
+                        <option value="20">20 per page</option>
+                        <option value="50">50 per page</option>
+                    </select>
+                </div>
+
+                <!-- Search -->
+                <div>
+                    <input type="text" class="form-control" placeholder="Search..." value="@searchValue" @oninput="OnSearchInput" />
+                </div>
+
+                <!-- Status filter -->
+                <div>
+                    <select class="form-select" @onchange="OnStatusFilterChanged">
+                        <option value="">All Status</option>
+                        <option value="true" selected="@((statusFilter == true))">Active</option>
+                        <option value="false" selected="@((statusFilter == false))">Inactive</option>
+                    </select>
+                </div>
+
+                <!-- Gender filter -->
+                <div>
+                    <select class="form-select" @onchange="OnGenderFilterChanged">
+                        <option value="">All Genders</option>
+                        <option value="Male" selected="@(genderFilter == "Male")">Male</option>
+                        <option value="Female" selected="@(genderFilter == "Female")">Female</option>
+                        <option value="Other" selected="@(genderFilter == "Other")">Other</option>
+                    </select>
                 </div>
             </div>
         </div>
+
         <div class="card-body">
             @if (patients?.Data?.Any() == true)
             {
                 <table class="table table-striped table-bordered">
                     <thead>
                         <tr>
-                            <th>Full Name</th>
-                            <th>Gender</th>
-                            <th>Join Date</th>
-                            <th>Status</th>
+                            <th @onclick="@(() => OnSort("FullName"))" style="cursor:pointer">
+                                Full Name <i class="@GetSortIconClass("FullName")" style="margin-left: 5px;"></i>
+                            </th>
+                            <th @onclick="@(() => OnSort("Gender"))" style="cursor:pointer">
+                                Gender <i class="@GetSortIconClass("Gender")" style="margin-left: 5px;"></i>
+                            </th>
+                            <th @onclick="@(() => OnSort("JoinDate"))" style="cursor:pointer">
+                                Join Date <i class="@GetSortIconClass("JoinDate")" style="margin-left: 5px;"></i>
+                            </th>
+                            <th @onclick="@(() => OnSort("Status"))" style="cursor:pointer">
+                                Status <i class="@GetSortIconClass("Status")" style="margin-left: 5px;"></i>
+                            </th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -50,22 +87,24 @@ else
                                 <td>@(patient?.Status == true ? "Active" : "Inactive")</td>
                                 <td>
                                     <button class="btn btn-info btn-sm" @onclick="() => EditPatient(patient.Id)">Edit</button>
-                                    <button class="btn btn-danger btn-sm ml-2" @onclick="() => DeletePatient(patient.Id)">Delete</button>
+                                    <button class="btn btn-danger btn-sm ms-2" @onclick="() => DeletePatient(patient?.Id)">Delete</button>
                                 </td>
                             </tr>
                         }
                     </tbody>
                 </table>
-                <div class="row">
-                    <div class="col-md-6">
-                        <span>Total records: @totalRecords</span>
-                    </div>
-                    <div class="col-md-6 text-right">
-                        <button class="btn btn-secondary" @onclick="PreviousPage" disabled="@(currentPage <= 1)">Previous</button>
-                        <span class="mx-2">Page @currentPage of @((int)Math.Ceiling((double)totalRecords / pageSize))</span>
-                        <button class="btn btn-secondary" @onclick="NextPage" disabled="@(currentPage* pageSize >= totalRecords)">Next</button>
-                    </div>
-                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+    <div>
+        <span>Total records: @totalRecords</span>
+    </div>
+    <div>
+        <button class="btn btn-secondary me-2" @onclick="PreviousPage" disabled="@(currentPage <= 1)">Previous</button>
+        <span>Page @currentPage of @totalPages</span>
+        <button class="btn btn-secondary ms-2" @onclick="NextPage" disabled="@(currentPage >= totalPages)">Next</button>
+    </div>
+</div>
+
             }
             else
             {
@@ -82,33 +121,31 @@ else
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Edit Patient</h5>
-                    <button type="button" class="close" @onclick="CloseDialog">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+                    <button type="button" class="btn-close" @onclick="CloseDialog" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <EditForm Model="@patientModel" OnValidSubmit="@HandleValidSubmit">
                         <DataAnnotationsValidator />
                         <ValidationSummary />
 
-                        <div class="form-group">
+                        <div class="form-group mb-3">
                             <label for="fullName">Full Name</label>
                             <InputText id="fullName" class="form-control" @bind-Value="patientModel.FullName" disabled />
                         </div>
 
-                        <div class="form-group">
+                        <div class="form-group mb-3">
                             <label for="gender">Gender</label>
                             <InputText id="gender" class="form-control" @bind-Value="patientModel.Gender" disabled />
                         </div>
 
-                        <div class="form-group">
+                        <div class="form-group mb-3">
                             <label for="joinDate">Join Date</label>
                             <InputDate id="joinDate" class="form-control" @bind-Value="patientModel.JoinDate" disabled />
                         </div>
 
-                        <div class="form-group">
+                        <div class="form-group mb-3">
                             <label for="status">Status</label>
-                            <InputSelect id="status" class="form-control" @bind-Value="patientModel.Status">
+                            <InputSelect id="status" class="form-select" @bind-Value="patientModel.Status">
                                 <option value="true">Active</option>
                                 <option value="false">Inactive</option>
                             </InputSelect>
@@ -120,7 +157,6 @@ else
                             <button type="submit" class="btn btn-primary">Save</button>
                         </div>
                     </EditForm>
-
                 </div>
             </div>
         </div>
@@ -137,13 +173,21 @@ else
     private int currentPage = 1;
     private int pageSize = 10;
     private int totalRecords = 0;
+    private int totalPages => (int)Math.Ceiling((double)totalRecords / pageSize);
+    private CancellationTokenSource? cts;
+
+    // Sorting
+    private string? sortColumn;
+    private string sortDirection = "asc";
+
+    // Filters
+    private bool? statusFilter = null;
+    private string? genderFilter = null;
+
+    // Debounce timer
+    private System.Timers.Timer? debounceTimer;
 
     protected override async Task OnInitializedAsync()
-    {
-        await LoadPatients();
-    }
-
-    protected override async Task OnParametersSetAsync()
     {
         await LoadPatients();
     }
@@ -155,21 +199,54 @@ else
 
         try
         {
+            var token = await LocalStorage.GetItemAsync<string>("jwt_token");
+            if (string.IsNullOrEmpty(token))
+            {
+                NavigationManager.NavigateTo("/login");
+                return;
+            }
+
             var filters = new PatientFilterModel
             {
                 Draw = currentPage,
                 Start = (currentPage - 1) * pageSize,
                 Length = pageSize,
-                SearchValue = searchValue?.Trim()
+                SearchValue = searchValue,
+                Status = statusFilter,
+                Gender = genderFilter,
+                SortColumn = sortColumn,
+                SortDirection = sortDirection
             };
 
-            patients = await PatientService.GetAllPatientsAsync(filters);
+            var response = await PatientService.GetAllPatientsAsync(filters);
+            
+            // Assuming the response needs to be mapped to PatientListResponse
+            patients = new PatientListResponse
+            {
+                Data = response.Data.Select(p => new PatientDto
+                {
+                    Id = p.Id,
+                    FullName = p.FullName,
+                    Gender = p.Gender,
+                    JoinDate = p.JoinDate,
+                    Status = p.Status
+                }).ToList(),
+                RecordsTotal = response.RecordsTotal,
+                RecordsFiltered = response.RecordsFiltered,
+                Draw = response.Draw
+            };
+
             totalRecords = patients.RecordsTotal;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading patients: {ex.Message}");
-            patients = new PatientListResponse();
+            patients = new PatientListResponse { Data = new List<PatientDto>() };
+
+            if (ex.Message.Contains("401") || ex.Message.Contains("Unauthorized"))
+            {
+                NavigationManager.NavigateTo("/login");
+            }
         }
         finally
         {
@@ -178,9 +255,89 @@ else
         }
     }
 
+    private async void OnSearchInput(ChangeEventArgs e)
+    {
+        searchValue = e.Value?.ToString() ?? string.Empty;
+
+        debounceTimer?.Stop();
+        debounceTimer?.Dispose();
+
+        debounceTimer = new System.Timers.Timer(500);
+        debounceTimer.Elapsed += async (_, _) =>
+        {
+            debounceTimer?.Stop();
+            debounceTimer?.Dispose();
+            debounceTimer = null;
+
+            await InvokeAsync(async () =>
+            {
+                currentPage = 1;
+                await LoadPatients();
+                StateHasChanged();
+            });
+        };
+        debounceTimer.AutoReset = false;
+        debounceTimer.Start();
+    }
+
+    // Status filter change
+    private async Task OnStatusFilterChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString();
+        if (string.IsNullOrEmpty(value))
+            statusFilter = null;
+        else if (bool.TryParse(value, out var parsed))
+            statusFilter = parsed;
+
+        currentPage = 1;
+        await LoadPatients();
+    }
+
+    // Gender filter change
+    private async Task OnGenderFilterChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString();
+        if (string.IsNullOrEmpty(value))
+            genderFilter = null;
+        else
+            genderFilter = value;
+
+        currentPage = 1;
+        await LoadPatients();
+    }
+
+    private async Task OnPageSizeChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var size))
+        {
+            pageSize = size;
+            currentPage = 1;
+            await LoadPatients();
+        }
+    }
+
+    private async Task NextPage()
+    {
+        if (currentPage < totalPages)
+        {
+            currentPage++;
+            await LoadPatients();
+        }
+    }
+
+    private async Task PreviousPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            await LoadPatients();
+        }
+    }
 
     private async Task EditPatient(int id)
     {
+        if (id <= 0) return;
+
         var patient = await PatientService.GetPatientByIdAsync(id);
         if (patient != null)
         {
@@ -189,39 +346,28 @@ else
                 Id = patient.Id,
                 FullName = patient.FullName,
                 Gender = patient.Gender,
-                JoinDate = DateTime.Parse(patient.JoinDate), 
+                JoinDate = DateTime.Parse(patient.JoinDate),
                 Status = patient.Status
             };
             selectedPatientId = id;
             showDialog = true;
         }
     }
-    private async Task DeletePatient(int id)
-    {
-        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this patient?");
-        if (!confirmed)
-            return;
 
-        try
+    private async Task DeletePatient(int? id)
+    {
+        if (!id.HasValue) return;
+
+        bool confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this patient?");
+        if (confirm)
         {
-            var result = await PatientService.DeletePatientAsync(id);
+            var result = await PatientService.DeletePatientAsync(id.Value);
             if (result.Success)
             {
                 await LoadPatients();
-                await JSRuntime.InvokeVoidAsync("alert", "Patient deleted successfully");
             }
-            else
-            {
-                await JSRuntime.InvokeVoidAsync("alert", result.Message ?? "Delete operation failed");
-            }
-        }
-        catch (Exception ex)
-        {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
         }
     }
-
-
 
     private async Task HandleValidSubmit()
     {
@@ -234,7 +380,7 @@ else
                 {
                     showDialog = false;
                     await LoadPatients();
-                    await JSRuntime.InvokeVoidAsync("alert", "Patient updated successfully");
+                    await JSRuntime.InvokeVoidAsync("alert", result.Message ?? "Operation completed successfully");
                 }
                 else
                 {
@@ -253,24 +399,26 @@ else
         showDialog = false;
     }
 
-    private async Task NextPage()
+    private void OnSort(string column)
     {
-        currentPage++;
-        await LoadPatients();
-    }
-
-    private async Task PreviousPage()
-    {
-        if (currentPage > 1)
+        if (sortColumn == column)
         {
-            currentPage--;
-            await LoadPatients();
+            sortDirection = sortDirection == "asc" ? "desc" : "asc";
         }
-    }
-    private async Task OnSearchInputChanged(ChangeEventArgs e)
-    {
-        searchValue = e.Value?.ToString();
-        await LoadPatients();
+        else
+        {
+            sortColumn = column;
+            sortDirection = "asc";
+        }
+        currentPage = 1;
+        _ = LoadPatients();
     }
 
+    private string GetSortIconClass(string column)
+    {
+        if (sortColumn != column)
+            return "bi bi-chevron-expand text-muted";
+        
+        return sortDirection == "asc" ? "bi bi-caret-up-fill text-primary" : "bi bi-caret-down-fill text-primary";
+    }
 }

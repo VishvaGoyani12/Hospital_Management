@@ -13,6 +13,7 @@ builder.Services.AddScoped<IAccountClientService, AccountClientService>();
 builder.Services.AddScoped<IDoctorClientService, DoctorClientService>();
 builder.Services.AddScoped<IPatientClientService, PatientClientService>();
 builder.Services.AddScoped<IPatientAppointmentClientService, PatientAppointmentClientService>();
+builder.Services.AddScoped<IDoctorAppointmentClientService, DoctorAppointmentClientService>();
 
 builder.Services.AddScoped<AuthHeaderHandler>();
 

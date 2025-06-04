@@ -8,5 +8,10 @@ namespace Appointment_Management_Blazor.Services.Interfaces
         Task<AuthResponse> RegisterAsync(RegisterViewModel model);
         Task<AuthResponse> LoginAsync(LoginViewModel model);
         Task<AuthResponse> ConfirmEmailAsync(string userId, string token);
+        Task<AuthResponse> ForgotPasswordAsync(string email);
+        Task<AuthResponse> ResetPasswordAsync(ResetPasswordViewModel model);
+        Task<AuthResponse> ChangePasswordAsync(string userId, ChangePasswordViewModel model);
+        Task<ProfileResponse> GetProfileAsync(string userId);
+        Task<AuthResponse> UpdateProfileAsync(string userId, UpdateProfileViewModel model);
     }
 }

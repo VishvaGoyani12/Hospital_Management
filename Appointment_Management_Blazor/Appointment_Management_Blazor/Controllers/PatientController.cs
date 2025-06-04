@@ -1,10 +1,12 @@
 ﻿using Appointment_Management_Blazor.Services.Interfaces;
 using Appointment_Management_Blazor.Shared.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Appointment_Management_Blazor.Controllers
 {
+    [Authorize(Roles = "Admin")]
     [Route("api/[controller]")]
     [ApiController]
     public class PatientController : ControllerBase

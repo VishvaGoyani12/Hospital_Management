@@ -1,169 +1,132 @@
-﻿using Appointment_Management_Blazor.Client.Helper;
-using Appointment_Management_Blazor.Client.Models.DTOs;
+﻿using Appointment_Management_Blazor.Client.Models.DTOs;
 using Appointment_Management_Blazor.Client.Services.Interfaces;
-using Appointment_Management_Blazor.Shared;
 using Appointment_Management_Blazor.Shared.Models;
 using Blazored.LocalStorage;
-using System.Collections.Generic;
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Threading.Tasks;
 
-namespace Appointment_Management_Blazor.Client.Services.Implementations
+public class DoctorClientService : IDoctorClientService
 {
-    public class DoctorClientService : IDoctorClientService
+    private readonly HttpClient _httpClient;
+    private readonly ILocalStorageService _localStorage;
+
+    public DoctorClientService(HttpClient httpClient, ILocalStorageService localStorage)
     {
-        private readonly HttpClient _httpClient;
-        private readonly ILocalStorageService _localStorage;
+        _httpClient = httpClient;
+        _localStorage = localStorage;
+    }
 
-        public DoctorClientService(HttpClient httpClient, ILocalStorageService localStorage)
+    private async Task AddJwtTokenAsync()
+    {
+        var token = await _localStorage.GetItemAsStringAsync("jwt_token");
+        if (!string.IsNullOrWhiteSpace(token))
         {
-            _httpClient = httpClient;
-            _localStorage = localStorage;
+            // Remove quotes if present
+            token = token.Replace("\"", "");
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
+    }
 
-
-        public async Task<DoctorListResponse> GetAllDoctorsAsync(DoctorFilterModel filters)
+    public async Task<DoctorListResponse> GetAllDoctorsAsync(DoctorFilterModel filters)
+    {
+        try
         {
-            try
-            {
-                var response = await _httpClient.PostAsJsonAsync("api/doctor/list", filters);
+            await AddJwtTokenAsync();
 
-                if (response.IsSuccessStatusCode)
-                {
-                    return await response.Content.ReadFromJsonAsync<DoctorListResponse>();
-                }
-
-                var errorContent = await response.Content.ReadAsStringAsync();
-                return new DoctorListResponse
-                {
-                    Data = new List<DoctorDto>(),
-                    RecordsTotal = 0,
-                    RecordsFiltered = 0,
-                    Draw = filters.Draw
-                };
-            }
-            catch (Exception ex)
+            var request = new HttpRequestMessage(HttpMethod.Post, "api/doctor/list")
             {
-                Console.WriteLine($"Error fetching doctors: {ex.Message}");
-                return new DoctorListResponse
-                {
-                    Data = new List<DoctorDto>(),
-                    RecordsTotal = 0,
-                    RecordsFiltered = 0,
-                    Draw = filters.Draw
-                };
-            }
+                Content = JsonContent.Create(filters)
+            };
+
+            var response = await _httpClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadFromJsonAsync<DoctorListResponse>();
         }
-
-        public async Task<DoctorDto> GetDoctorByIdAsync(string id)
+        catch (Exception ex)
         {
-            var response = await _httpClient.GetAsync($"api/doctor/{id}");
+            Console.WriteLine($"Error fetching doctors: {ex.Message}");
+            return new DoctorListResponse
+            {
+                Data = new List<DoctorDto>(),
+                RecordsTotal = 0,
+                RecordsFiltered = 0,
+                Draw = filters.Draw
+            };
+        }
+    }
+
+    public async Task<DoctorDto> GetDoctorByIdAsync(string id)
+    {
+        await AddJwtTokenAsync();
+        var response = await _httpClient.GetAsync($"api/doctor/{id}");
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<DoctorDto>();
+        }
+        return null;
+    }
+
+    public async Task<ApiResponse> CreateDoctorAsync(DoctorViewModel model)
+    {
+        try
+        {
+            await AddJwtTokenAsync();
+            var response = await _httpClient.PostAsJsonAsync("api/doctor/create", model);
+
             if (response.IsSuccessStatusCode)
-            {
-                // Deserialize JSON to DoctorDto
-                var doctor = await response.Content.ReadFromJsonAsync<DoctorDto>();
-                return doctor;
-            }
-            return null;
+                return await response.Content.ReadFromJsonAsync<ApiResponse>();
+
+            var errorContent = await response.Content.ReadAsStringAsync();
+            return new ApiResponse { Success = false, Message = $"Error: {response.StatusCode} - {errorContent}" };
         }
-
-
-        public async Task<ApiResponse> CreateDoctorAsync(DoctorViewModel model)
+        catch (Exception ex)
         {
-            try
-            {
-                var response = await _httpClient.PostAsJsonAsync("api/doctor/create", model); // Changed from "api/doctor/create" to "api/account/create"
-
-                if (response.IsSuccessStatusCode)
-                {
-                    return await response.Content.ReadFromJsonAsync<ApiResponse>();
-                }
-                else
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    return new ApiResponse
-                    {
-                        Success = false,
-                        Message = $"Error: {response.StatusCode} - {errorContent}"
-                    };
-                }
-            }
-            catch (Exception ex)
-            {
-                return new ApiResponse
-                {
-                    Success = false,
-                    Message = $"Exception: {ex.Message}"
-                };
-            }
+            return new ApiResponse { Success = false, Message = $"Exception: {ex.Message}" };
         }
+    }
 
-        public async Task<ApiResponse> UpdateDoctorAsync(DoctorViewModel model)
+    public async Task<ApiResponse> UpdateDoctorAsync(DoctorViewModel model)
+    {
+        try
         {
-            try
-            {
-                var response = await _httpClient.PutAsJsonAsync("api/doctor/edit", model);
+            await AddJwtTokenAsync();
+            var response = await _httpClient.PutAsJsonAsync("api/doctor/edit", model);
 
-                if (response.IsSuccessStatusCode)
-                {
-                    return await response.Content.ReadFromJsonAsync<ApiResponse>();
-                }
+            if (response.IsSuccessStatusCode)
+                return await response.Content.ReadFromJsonAsync<ApiResponse>();
 
-                var errorContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Update error: {errorContent}");
-                return new ApiResponse
-                {
-                    Success = false,
-                    Message = $"Error: {response.StatusCode} - {errorContent}"
-                };
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Update exception: {ex}");
-                return new ApiResponse
-                {
-                    Success = false,
-                    Message = $"Exception: {ex.Message}"
-                };
-            }
+            var errorContent = await response.Content.ReadAsStringAsync();
+            return new ApiResponse { Success = false, Message = $"Error: {response.StatusCode} - {errorContent}" };
         }
-
-        public async Task<ApiResponse> DeleteDoctorAsync(string id)
+        catch (Exception ex)
         {
-            try
-            {
-                // Changed endpoint to match controller route
-                var response = await _httpClient.DeleteAsync($"api/doctor/{id}");
-
-                if (response.IsSuccessStatusCode)
-                {
-                    return await response.Content.ReadFromJsonAsync<ApiResponse>();
-                }
-                else
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    return new ApiResponse
-                    {
-                        Success = false,
-                        Message = $"Error: {response.StatusCode} - {errorContent}"
-                    };
-                }
-            }
-            catch (Exception ex)
-            {
-                return new ApiResponse
-                {
-                    Success = false,
-                    Message = $"Exception: {ex.Message}"
-                };
-            }
+            return new ApiResponse { Success = false, Message = $"Exception: {ex.Message}" };
         }
+    }
 
-        public async Task<List<string>> GetSpecialistListAsync()
+    public async Task<ApiResponse> DeleteDoctorAsync(string id)
+    {
+        try
         {
-            return await _httpClient.GetFromJsonAsync<List<string>>("api/doctor/specialists");
+            await AddJwtTokenAsync();
+            var response = await _httpClient.DeleteAsync($"api/doctor/{id}");
+
+            if (response.IsSuccessStatusCode)
+                return await response.Content.ReadFromJsonAsync<ApiResponse>();
+
+            var errorContent = await response.Content.ReadAsStringAsync();
+            return new ApiResponse { Success = false, Message = $"Error: {response.StatusCode} - {errorContent}" };
         }
+        catch (Exception ex)
+        {
+            return new ApiResponse { Success = false, Message = $"Exception: {ex.Message}" };
+        }
+    }
+
+    public async Task<List<string>> GetSpecialistListAsync()
+    {
+        await AddJwtTokenAsync();
+        return await _httpClient.GetFromJsonAsync<List<string>>("api/doctor/specialists");
     }
 }

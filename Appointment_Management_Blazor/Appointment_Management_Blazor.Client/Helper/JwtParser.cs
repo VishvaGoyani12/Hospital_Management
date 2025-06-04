@@ -23,29 +23,18 @@ namespace Appointment_Management_Blazor.Client.Helper
                 if (keyValuePairs == null)
                     return Enumerable.Empty<string>();
 
-                if (keyValuePairs.TryGetValue("role", out var roles) ||
-                    keyValuePairs.TryGetValue("roles", out roles) ||
-                    keyValuePairs.TryGetValue("http://schemas.microsoft.com/ws/2008/06/identity/claims/role", out roles))
+                // Check for the exact claim type in your token
+                if (keyValuePairs.TryGetValue("http://schemas.microsoft.com/ws/2008/06/identity/claims/role", out var roles))
                 {
-                    if (roles.ValueKind == JsonValueKind.Array)
-                    {
-                        return roles.EnumerateArray()
-                                  .Select(x => x.GetString())
-                                  .Where(x => !string.IsNullOrEmpty(x))!;
-                    }
-                    else if (roles.ValueKind == JsonValueKind.String)
-                    {
-                        return new[] { roles.GetString()! };
-                    }
+                    return ProcessRoles(roles);
                 }
 
-                if (keyValuePairs.TryGetValue("claims", out var claims) && claims.ValueKind == JsonValueKind.Array)
+                // Fallback to other common role claim names
+                if (keyValuePairs.TryGetValue(ClaimTypes.Role, out roles) ||
+                    keyValuePairs.TryGetValue("role", out roles) ||
+                    keyValuePairs.TryGetValue("roles", out roles))
                 {
-                    return claims.EnumerateArray()
-                               .Where(c => c.TryGetProperty("type", out var type) &&
-                                          (type.GetString()?.EndsWith("/role") == true))
-                               .Select(c => c.GetProperty("value").GetString())
-                               .Where(x => !string.IsNullOrEmpty(x))!;
+                    return ProcessRoles(roles);
                 }
 
                 return Enumerable.Empty<string>();
@@ -55,6 +44,21 @@ namespace Appointment_Management_Blazor.Client.Helper
                 Console.WriteLine($"Error parsing JWT: {ex.Message}");
                 return Enumerable.Empty<string>();
             }
+        }
+
+        private static IEnumerable<string> ProcessRoles(JsonElement roles)
+        {
+            if (roles.ValueKind == JsonValueKind.Array)
+            {
+                return roles.EnumerateArray()
+                          .Select(x => x.GetString())
+                          .Where(x => !string.IsNullOrEmpty(x))!;
+            }
+            else if (roles.ValueKind == JsonValueKind.String)
+            {
+                return new[] { roles.GetString()! };
+            }
+            return Enumerable.Empty<string>();
         }
 
         public static string? GetEmailFromToken(string jwtToken)

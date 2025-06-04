@@ -6,7 +6,7 @@ using Appointment_Management_Blazor.Shared.Models;
 
 namespace Appointment_Management_Blazor.Controllers
 {
-    //[Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     [Route("api/[controller]")]
     [ApiController]
     public class DoctorController : ControllerBase

@@ -6,10 +6,11 @@ namespace Appointment_Management_Blazor.Client.Services.Interfaces
     public interface IPatientAppointmentClientService
     {
         Task<AppointmentListResponse> GetAllAppointmentsAsync(AppointmentFilterModel filters);
-        Task<AppointmentDto> GetAppointmentByIdAsync(int id);
+        Task<AppointmentViewModel> GetAppointmentByIdAsync(int id);
         Task<ApiResponse> CreateAppointmentAsync(AppointmentViewModel model);
         Task<ApiResponse> UpdateAppointmentAsync(AppointmentViewModel model);
         Task<ApiResponse> DeleteAppointmentAsync(int id);
-        Task<List<DoctorDropdownDto>> GetAvailableDoctorsAsync(DateTime? date, int? selectedDoctorId);
+        Task<List<DoctorViewModel>> GetAvailableDoctorsAsync(DateTime? date, int? selectedDoctorId = null);
+        Task<PatientInfoDto> GetCurrentPatientInfo();
     }
 }

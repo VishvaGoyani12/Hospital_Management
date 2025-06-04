@@ -16,5 +16,19 @@ namespace Appointment_Management_Blazor.Shared.Models
         public string? SearchValue { get; set; }
         public string? Status { get; set; }
         public int? PatientId { get; set; }
+        public int? DoctorId { get; set; }
+    }
+
+    public class DoctorInfoDto
+    {
+        public int Id { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string SpecialistIn { get; set; } = string.Empty;
+    }
+
+    public class UpdateStatusModel
+    {
+        public int Id { get; set; }
+        public string Status { get; set; } = string.Empty;
     }
 }

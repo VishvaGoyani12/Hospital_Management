@@ -30,7 +30,7 @@ namespace Appointment_Management_Blazor.Client.Models.DTOs
         public int Id { get; set; }
         public string FullName { get; set; }
         public string SpecialistIn { get; set; } 
-        public bool Status { get; set; } // Add if needed
+        public bool Status { get; set; } 
     }
 
     public class PatientInfoDto

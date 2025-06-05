@@ -12,7 +12,7 @@ namespace Appointment_Management_Blazor.Shared.HelperModel
         public bool IsSuccess { get; set; }
         public string Message { get; set; }
         public string Token { get; set; }
-        public Dictionary<string, string[]>? Errors { get; set; }  // new property
+        public Dictionary<string, string[]>? Errors { get; set; }  
     }
 
     public class ProfileResponse : AuthResponse

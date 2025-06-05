@@ -21,7 +21,6 @@ public class DoctorClientService : IDoctorClientService
         var token = await _localStorage.GetItemAsStringAsync("jwt_token");
         if (!string.IsNullOrWhiteSpace(token))
         {
-            // Remove quotes if present
             token = token.Replace("\"", "");
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }

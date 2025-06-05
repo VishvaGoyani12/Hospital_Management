@@ -181,7 +181,6 @@ else
     private bool? statusFilter = null;
     private string? genderFilter = null;
 
-    // Debounce timer
     private System.Timers.Timer? debounceTimer;
 
     protected override async Task OnInitializedAsync()
@@ -221,7 +220,6 @@ else
 
             var response = await PatientService.GetAllPatientsAsync(filters);
             
-            // Assuming the response needs to be mapped to PatientListResponse
             patients = new PatientListResponse
             {
                 Data = response.Data.Select(p => new PatientDto
@@ -281,7 +279,6 @@ else
         debounceTimer.Start();
     }
 
-    // Status filter change
     private async Task OnStatusFilterChanged(ChangeEventArgs e)
     {
         var value = e.Value?.ToString();
@@ -294,7 +291,6 @@ else
         await LoadPatients();
     }
 
-    // Gender filter change
     private async Task OnGenderFilterChanged(ChangeEventArgs e)
     {
         var value = e.Value?.ToString();
@@ -377,7 +373,6 @@ else
         }
         catch (HttpRequestException ex)
         {
-            // Handle API errors
             await JSRuntime.InvokeVoidAsync("alert", ex.Message);
         }
     }

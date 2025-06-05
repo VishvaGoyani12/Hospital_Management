@@ -121,7 +121,6 @@ namespace Appointment_Management_Blazor.Services.Implementations
             }
             catch (Exception ex)
             {
-                // Log error here
                 throw;
             }
         }
@@ -155,7 +154,6 @@ namespace Appointment_Management_Blazor.Services.Implementations
             }
             catch (Exception ex)
             {
-                // Log error here
                 throw;
             }
         }
@@ -178,7 +176,6 @@ namespace Appointment_Management_Blazor.Services.Implementations
             }
             catch (Exception ex)
             {
-                // Log error here
                 throw;
             }
         }

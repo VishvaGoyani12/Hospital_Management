@@ -81,7 +81,6 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
             }
             else
             {
-                // fallback if 'recordsFiltered' missing
                 result.RecordsFiltered = result.RecordsTotal;
             }
 

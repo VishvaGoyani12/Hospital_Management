@@ -90,7 +90,6 @@ If the above link doesn't work, copy and paste this into your browser:<br/>
             }
             catch (Exception ex)
             {
-                // Log the exception here
                 return new AuthResponse
                 {
                     IsSuccess = false,
@@ -149,7 +148,6 @@ If the above link doesn't work, copy and paste this into your browser:<br/>
             foreach (var userRole in userRoles)
             {
                 authClaims.Add(new Claim(ClaimTypes.Role, userRole));
-                // Also add with the full URI if needed
                 authClaims.Add(new Claim("http://schemas.microsoft.com/ws/2008/06/identity/claims/role", userRole));
             }
 

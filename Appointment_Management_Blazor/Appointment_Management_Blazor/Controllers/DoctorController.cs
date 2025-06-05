@@ -18,7 +18,6 @@ namespace Appointment_Management_Blazor.Controllers
             _doctorService = doctorService;
         }
 
-        // Existing GET endpoint with query parameters
         [HttpGet]
         public async Task<IActionResult> GetAllDoctors([FromQuery] DoctorFilterModel filters)
         {
@@ -26,7 +25,6 @@ namespace Appointment_Management_Blazor.Controllers
             return Ok(result);
         }
 
-        // New POST endpoint for more complex filtering
         [HttpPost("list")]
         public async Task<IActionResult> GetDoctorList([FromBody] DoctorFilterModel filters)
         {

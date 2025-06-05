@@ -90,11 +90,9 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
                     throw new HttpRequestException($"Server error: {response.StatusCode} - {errorContent}");
                 }
 
-                // First read as string to debug if needed
                 var content = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"Raw API response: {content}");
 
-                // Deserialize properly with ApiResponse wrapper
                 var apiResponse = JsonSerializer.Deserialize<ApiResponse<AppointmentViewModel>>(
                     content,
                     new JsonSerializerOptions

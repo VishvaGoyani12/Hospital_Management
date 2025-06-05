@@ -39,7 +39,6 @@ namespace Appointment_Management_Blazor.Controllers
                     return BadRequest(new { Message = "Request body cannot be null" });
                 }
 
-                // Manual validation
                 var validationResults = new List<ValidationResult>();
                 var validationContext = new ValidationContext(model);
                 if (!Validator.TryValidateObject(model, validationContext, validationResults, true))
@@ -213,7 +212,6 @@ namespace Appointment_Management_Blazor.Controllers
         {
             try
             {
-                // Get user ID from the correct claim
                 var userId = User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
 
                 if (string.IsNullOrEmpty(userId))

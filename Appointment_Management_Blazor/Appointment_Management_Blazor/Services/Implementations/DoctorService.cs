@@ -127,12 +127,6 @@ namespace Appointment_Management_Blazor.Services.Implementations
 
         public async Task<(bool Success, string Message)> CreateDoctorAsync(DoctorViewModel model)
         {
-            // Validate password
-            if (string.IsNullOrWhiteSpace(model.Password) || model.Password.Length < 6)
-            {
-                return (false, "Password must be at least 6 characters long.");
-            }
-
             if (model.Password != model.ConfirmPassword)
             {
                 return (false, "Password and confirmation password do not match.");
@@ -207,7 +201,6 @@ namespace Appointment_Management_Blazor.Services.Implementations
                 var user = await _userManager.FindByIdAsync(model.ApplicationUserId);
                 if (user == null)
                 {
-                    // Log the ID that wasn't found
                     Console.WriteLine($"User not found with ID: {model.ApplicationUserId}");
                     return (false, $"User not found with ID: {model.ApplicationUserId}");
                 }
@@ -221,7 +214,7 @@ namespace Appointment_Management_Blazor.Services.Implementations
                     return (false, "Doctor not found");
                 }
 
-                // Update user properties
+                // Update user
                 user.FullName = model.FullName;
                 user.Gender = model.Gender;
                 user.Email = model.Email;
@@ -235,7 +228,7 @@ namespace Appointment_Management_Blazor.Services.Implementations
                     return (false, string.Join(", ", userResult.Errors.Select(e => e.Description)));
                 }
 
-                // Update password if provided
+                // Update password
                 if (!string.IsNullOrEmpty(model.Password))
                 {
                     var token = await _userManager.GeneratePasswordResetTokenAsync(user);
@@ -246,7 +239,6 @@ namespace Appointment_Management_Blazor.Services.Implementations
                     }
                 }
 
-                // Update doctor properties
                 doctor.SpecialistIn = model.SpecialistIn;
                 doctor.Status = model.Status;
 
@@ -270,7 +262,6 @@ namespace Appointment_Management_Blazor.Services.Implementations
             if (doctor == null)
                 return (false, "Doctor not found");
 
-            // Check for any appointments with status "Pending" or "Confirmed"
             var hasAppointments = await _context.Appointments
                 .AnyAsync(a => a.DoctorId == doctor.Id &&
                               (a.Status == "Pending" || a.Status == "Confirmed"));

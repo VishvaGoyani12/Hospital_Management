@@ -215,7 +215,6 @@ else
 
     private List<string> distinctSpecializations = new();
 
-    // Debounce timer
     private System.Timers.Timer? debounceTimer;
 
     protected override async Task OnInitializedAsync()
@@ -282,18 +281,18 @@ else
     }
 
     private async void OnSearchInput(ChangeEventArgs e)
-{
-    searchValue = e.Value?.ToString() ?? string.Empty;
-
-    debounceTimer?.Stop();
-    debounceTimer?.Dispose();
-
-    debounceTimer = new System.Timers.Timer(500);
-    debounceTimer.Elapsed += async (_, _) =>
     {
-        debounceTimer?.Stop();
-        debounceTimer?.Dispose();
-        debounceTimer = null;
+       searchValue = e.Value?.ToString() ?? string.Empty;
+
+       debounceTimer?.Stop();
+       debounceTimer?.Dispose();
+
+       debounceTimer = new System.Timers.Timer(500);
+       debounceTimer.Elapsed += async (_, _) =>
+      {
+          debounceTimer?.Stop();
+          debounceTimer?.Dispose();
+          debounceTimer = null;
 
         await InvokeAsync(async () =>
         {
@@ -301,13 +300,12 @@ else
             await LoadDoctors();
             StateHasChanged();
         });
-    };
-    debounceTimer.AutoReset = false;
-    debounceTimer.Start();
-}
+      };
+         debounceTimer.AutoReset = false;
+         debounceTimer.Start();
+    }
 
 
-    // Status filter change
     private async Task OnStatusFilterChanged(ChangeEventArgs e)
     {
         var value = e.Value?.ToString();
@@ -320,7 +318,6 @@ else
         await LoadDoctors();
     }
 
-    // Specialization filter change
     private async Task OnSpecializationFilterChanged(ChangeEventArgs e)
     {
         var value = e.Value?.ToString();

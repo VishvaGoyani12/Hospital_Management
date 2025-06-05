@@ -25,7 +25,7 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
             var token = await _localStorage.GetItemAsStringAsync("jwt_token");
             if (!string.IsNullOrWhiteSpace(token))
             {
-                token = token.Replace("\"", ""); // Remove quotes if present
+                token = token.Replace("\"", ""); 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             }
         }
@@ -34,7 +34,6 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
         {
             try
             {
-                // Add logging for the outgoing request
                 Console.WriteLine($"Sending registration request for: {model.Email}");
                 var modelJson = JsonSerializer.Serialize(model);
                 Console.WriteLine($"Request payload: {modelJson}");
@@ -43,31 +42,21 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    // Read content as string first
                     var content = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"Error response content: {content}");
 
-                    // Handle different content types
                     if (response.Content.Headers.ContentType?.MediaType == "application/problem+json")
                     {
-                        try
-                        {
-                            // Try to parse as ProblemDetails
-                            using var jsonDoc = JsonDocument.Parse(content);
+                          using var jsonDoc = JsonDocument.Parse(content);
                             var problemDetails = jsonDoc.RootElement;
 
-                            if (problemDetails.TryGetProperty("title", out var title) ||
-                                problemDetails.TryGetProperty("detail", out var detail))
-                            {
-                                return new AuthResponse
-                                {
-                                    IsSuccess = false,
-                                };
-                            }
-                        }
-                        catch (JsonException)
+                        if (problemDetails.TryGetProperty("title", out var title) ||
+                            problemDetails.TryGetProperty("detail", out var detail))
                         {
-                            // Fall through to return raw content
+                            return new AuthResponse
+                            {
+                                IsSuccess = false,
+                            };
                         }
                     }
 
@@ -186,7 +175,6 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
             {
                 await AddJwtTokenAsync();
 
-                // First, verify the token exists
                 var token = await _localStorage.GetItemAsStringAsync("jwt_token");
                 if (string.IsNullOrWhiteSpace(token))
                 {
@@ -206,7 +194,6 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
 
                     if (response.StatusCode == HttpStatusCode.Unauthorized)
                     {
-                        // Token might be expired - clear it
                         await _localStorage.RemoveItemAsync("jwt_token");
                         return new ProfileResponse
                         {
@@ -224,7 +211,6 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
 
                 var result = await response.Content.ReadFromJsonAsync<ProfileResponse>();
 
-                // Ensure profile is initialized
                 if (result != null && result.Profile == null)
                 {
                     result.Profile = new UpdateProfileViewModel();

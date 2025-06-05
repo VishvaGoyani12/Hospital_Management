@@ -4,61 +4,53 @@
 @inject IJSRuntime JSRuntime
 @inject ILocalStorageService LocalStorage
 
-<h3>Appointment Management</h3>
+<h3 class="mb-4">Appointment Management</h3>
 
 @if (isLoading)
 {
-    <div class="text-center">
-        <div class="spinner-border" role="status">
-            <span class="sr-only"></span>
-        </div>
+    <div class="text-center my-5">
+        <div class="spinner-border text-primary" role="status"></div>
     </div>
 }
 else
 {
-    <div class="card">
-        <div class="card-header">
-            <div class="d-flex align-items-center flex-wrap gap-2">
-                <div>
-                    <select class="form-select w-auto" @onchange="OnPageSizeChanged" value="@pageSize" style="min-width: 130px;">
-                        <option value="10">10 per page</option>
-                        <option value="20">20 per page</option>
-                        <option value="50">50 per page</option>
-                    </select>
-                </div>
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-light">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <select class="form-select w-auto" @onchange="OnPageSizeChanged" value="@pageSize">
+                    <option value="10">10 per page</option>
+                    <option value="20">20 per page</option>
+                    <option value="50">50 per page</option>
+                </select>
 
-                <div>
-                    <input type="text" class="form-control" placeholder="Search..." value="@searchValue" @oninput="OnSearchInput" />
-                </div>
+                <input type="text" class="form-control w-auto" placeholder="Search..." value="@searchValue" @oninput="OnSearchInput" />
 
-                <div>
-                    <select class="form-select" @onchange="OnStatusFilterChanged">
-                        <option value="">All Statuses</option>
-                        <option value="Pending" selected="@(statusFilter == "Pending")">Pending</option>
-                        <option value="Confirmed" selected="@(statusFilter == "Confirmed")">Confirmed</option>
-                        <option value="Cancelled" selected="@(statusFilter == "Cancelled")">Cancelled</option>
-                    </select>
-                </div>
+                <select class="form-select w-auto" @onchange="OnStatusFilterChanged">
+                    <option value="">All Statuses</option>
+                    <option value="Pending" selected="@(statusFilter == "Pending")">Pending</option>
+                    <option value="Confirmed" selected="@(statusFilter == "Confirmed")">Confirmed</option>
+                    <option value="Cancelled" selected="@(statusFilter == "Cancelled")">Cancelled</option>
+                </select>
             </div>
         </div>
 
         <div class="card-body">
             @if (appointments?.Data?.Any() == true)
             {
-                <table class="table table-striped table-bordered">
-                    <thead>
+                <table class="table table-striped table-bordered table-hover align-middle" style="background-color: #fdfdfd;">
+                    <thead class="table-light" style="background-color: #eaf1f8;">
                         <tr>
                             <th @onclick="@(() => OnSort("PatientName"))" style="cursor:pointer">
-                                Patient <i class="@GetSortIconClass("PatientName")" style="margin-left: 5px;"></i>
+                                Patient <i class="@GetSortIconClass("PatientName") ms-1"></i>
                             </th>
                             <th @onclick="@(() => OnSort("AppointmentDate"))" style="cursor:pointer">
-                                Date <i class="@GetSortIconClass("AppointmentDate")" style="margin-left: 5px;"></i>
+                                Date <i class="@GetSortIconClass("AppointmentDate") ms-1"></i>
                             </th>
                             <th @onclick="@(() => OnSort("Description"))" style="cursor:pointer">
-                                Description <i class="@GetSortIconClass("Description")" style="margin-left: 5px;"></i>
+                                Description <i class="@GetSortIconClass("Description") ms-1"></i>
                             </th>
                             <th @onclick="@(() => OnSort("Status"))" style="cursor:pointer">
-                                Status <i class="@GetSortIconClass("Status")" style="margin-left: 5px;"></i>
+                                Status <i class="@GetSortIconClass("Status") ms-1"></i>
                             </th>
                             <th>Actions</th>
                         </tr>
@@ -70,47 +62,60 @@ else
                                 <td>@appointment?.PatientName</td>
                                 <td>@appointment?.AppointmentDate.ToString("yyyy-MM-dd HH:mm")</td>
                                 <td>@appointment?.Description</td>
-                                <td>@appointment?.Status</td>
                                 <td>
-                                    @if (CanUpdate(appointment.Status))
+                                    <span class="badge bg-@(appointment.Status switch
                                     {
-                                        <select class="form-select form-select-sm w-auto"
-                                                value="@appointment.Status"
-                                                @onchange="async e => await UpdateStatus(appointment.Id, e.Value?.ToString())">
-                                            <option disabled selected value="">Change Status</option>
-                                            <option value="Confirmed">Confirmed</option>
-                                            <option value="Cancelled">Cancelled</option>
-                                        </select>
-                                    }
-                                    else
-                                    {
+                                        "Pending" => "warning",
+                                        "Confirmed" => "success",
+                                        "Cancelled" => "secondary",
+                                        _ => "dark"
+                                    })">
                                         @appointment.Status
-                                    }
+                                    </span>
                                 </td>
+                                <td>
+    @if (CanUpdate(appointment.Status))
+    {
+        <select class="form-select form-select-sm w-auto"
+                value=""
+                @onchange="async e => await UpdateStatus(appointment.Id, e.Value?.ToString())">
+            <option disabled value="">Change Status</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Cancelled">Cancelled</option>
+        </select>
+    }
+    else
+    {
+        @appointment.Status
+    }
+</td>
+
                             </tr>
                         }
                     </tbody>
                 </table>
 
                 <div class="d-flex justify-content-between align-items-center mt-3">
-    <div>
-        <span>Total records: @totalRecords</span>
-    </div>
-    <div>
-        <button class="btn btn-secondary me-2" @onclick="PreviousPage" disabled="@(currentPage <= 1)">Previous</button>
-        <span>Page @currentPage of @totalPages</span>
-        <button class="btn btn-secondary ms-2" @onclick="NextPage" disabled="@(currentPage >= totalPages)">Next</button>
-    </div>
-</div>
-
+                    <span>Total records: @totalRecords</span>
+                    <div>
+                        <button class="btn btn-outline-secondary btn-sm me-2" @onclick="PreviousPage" disabled="@(currentPage <= 1)">
+                            <i class="bi bi-chevron-left"></i> Prev
+                        </button>
+                        <span>Page @currentPage of @totalPages</span>
+                        <button class="btn btn-outline-secondary btn-sm ms-2" @onclick="NextPage" disabled="@(currentPage >= totalPages)">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
             }
             else
             {
-                <div class="alert alert-info">No appointments found.</div>              
+                <div class="alert alert-info">No appointments found.</div>
             }
         </div>
     </div>
 }
+
 
 @code {
     private AppointmentListResponse appointments = new();
@@ -132,33 +137,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        // await LoadDoctorId();
+        if (!await RoleGuard.HasRoleAsync(LocalStorage, "Doctor"))
+        {
+            NavigationManager.NavigateTo("/access-denied", forceLoad: true);
+        }
         await LoadAppointments();
-    }
-
-    // private async Task LoadDoctorId()
-    // {
-    //     try
-    //     {
-    //         var userId = await LocalStorage.GetItemAsync<string>("user_id");
-    //         if (string.IsNullOrEmpty(userId))
-    //         {
-    //             NavigationManager.NavigateTo("/login");
-    //             return;
-    //         }
-
-    //         doctorId = await AppointmentService.GetDoctorIdByUserIdAsync(userId);
-    //         if (doctorId <= 0)
-    //         {
-    //             NavigationManager.NavigateTo("/login");
-    //         }
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         Console.WriteLine($"Error loading doctor ID: {ex.Message}");
-    //         NavigationManager.NavigateTo("/login");
-    //     }
-    // }
+    } 
 
     private async Task LoadAppointments()
     {
@@ -271,20 +255,25 @@ else
     }
 
     private async Task UpdateStatus(int id, string? newStatus)
+{
+    if (string.IsNullOrWhiteSpace(newStatus)) return;
+
+    bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to change the status to '{newStatus}'?");
+    if (!confirmed)
+        return;
+
+    var result = await AppointmentService.UpdateAppointmentStatusAsync(new UpdateStatusModel
     {
-        if (string.IsNullOrWhiteSpace(newStatus)) return;
+        Id = id,
+        Status = newStatus
+    });
 
-        var result = await AppointmentService.UpdateAppointmentStatusAsync(new UpdateStatusModel
-        {
-            Id = id,
-            Status = newStatus
-        });
-
-        if (result)
-        {
-            await LoadAppointments();
-        }
+    if (result)
+    {
+        await LoadAppointments();
     }
+}
+
 
     private bool CanUpdate(string status) => status == "Pending";
 

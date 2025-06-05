@@ -5,59 +5,45 @@
 @inject ILocalStorageService LocalStorage
 @inject IJSRuntime JSRuntime
 
-<h3>Doctors Management</h3>
+<h3 class="mb-4">Doctors Management</h3>
 
 @if (isLoading)
 {
-    <div class="text-center">
-        <div class="spinner-border" role="status">
-            <span class="sr-only"></span>
-        </div>
+    <div class="text-center my-5">
+        <div class="spinner-border text-primary" role="status"></div>
     </div>
 }
 else
 {
-    <div class="card">
-        <div class="card-header">
-            <!-- Single row for all controls -->
-            <div class="d-flex align-items-center flex-wrap gap-2">
-                <!-- Per page dropdown - leftmost -->
-                <div>
-                    <select class="form-select w-auto" @onchange="OnPageSizeChanged" value="@pageSize" style="min-width: 130px;">
-                        <option value="10">10 per page</option>
-                        <option value="20">20 per page</option>
-                        <option value="50">50 per page</option>
-                    </select>
-                </div>
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-light">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <select class="form-select w-auto" @onchange="OnPageSizeChanged" value="@pageSize">
+                    <option value="10">10 per page</option>
+                    <option value="20">20 per page</option>
+                    <option value="50">50 per page</option>
+                </select>
 
-                <!-- Search -->
-                <div>
-                   <input type="text" class="form-control" placeholder="Search..." value="@searchValue" @oninput="OnSearchInput" />
-                </div>
+                <input type="text" class="form-control w-auto" placeholder="Search..." value="@searchValue" @oninput="OnSearchInput" />
 
-                <!-- Status filter -->
-                <div>
-                    <select class="form-select" @onchange="OnStatusFilterChanged">
-                        <option value="">All Status</option>
-                        <option value="true" selected="@((statusFilter == true))">Active</option>
-                        <option value="false" selected="@((statusFilter == false))">Inactive</option>
-                    </select>
-                </div>
+                <select class="form-select w-auto" @onchange="OnStatusFilterChanged">
+                    <option value="">All Status</option>
+                    <option value="true" selected="@((statusFilter == true))">Active</option>
+                    <option value="false" selected="@((statusFilter == false))">Inactive</option>
+                </select>
 
-                <!-- Specialization filter -->
-                <div>
-                    <select class="form-select" @onchange="OnSpecializationFilterChanged">
-                        <option value="">All Specializations</option>
-                        @foreach (var spec in distinctSpecializations)
-                        {
-                            <option value="@spec" selected="@(spec == specialistInFilter)">@spec</option>
-                        }
-                    </select>
-                </div>
+                <select class="form-select w-auto" @onchange="OnSpecializationFilterChanged">
+                    <option value="">All Specializations</option>
+                    @foreach (var spec in distinctSpecializations)
+                    {
+                        <option value="@spec" selected="@(spec == specialistInFilter)">@spec</option>
+                    }
+                </select>
 
-                <!-- Add New button - right aligned -->
                 <div class="ms-auto">
-                    <button class="btn btn-primary" @onclick="AddNewDoctor">Add New Doctor</button>
+                    <button class="btn btn-primary" @onclick="AddNewDoctor">
+                        <i class="bi bi-plus-lg me-1"></i> Add New Doctor
+                    </button>
                 </div>
             </div>
         </div>
@@ -65,20 +51,20 @@ else
         <div class="card-body">
             @if (doctors?.Data?.Any() == true)
             {
-                <table class="table table-striped table-bordered">
-                    <thead>
+                <table class="table table-striped table-bordered table-hover align-middle" style="background-color: #fdfdfd;">
+                    <thead class="table-light" style="background-color: #eaf1f8;">
                         <tr>
                             <th @onclick="@(() => OnSort("FullName"))" style="cursor:pointer">
-                                Full Name  <i class="@GetSortIconClass("FullName")" style="margin-left: 5px;"></i>
+                                Full Name <i class="@GetSortIconClass("FullName") ms-1"></i>
                             </th>
                             <th @onclick="@(() => OnSort("Gender"))" style="cursor:pointer">
-                                Gender  <i class="@GetSortIconClass("Gender")" style="margin-left: 5px;"></i>
+                                Gender <i class="@GetSortIconClass("Gender") ms-1"></i>
                             </th>
                             <th @onclick="@(() => OnSort("SpecialistIn"))" style="cursor:pointer">
-                                Specialization  <i class="@GetSortIconClass("SpecialistIn")" style="margin-left: 5px;"></i>
+                                Specialization <i class="@GetSortIconClass("SpecialistIn") ms-1"></i>
                             </th>
                             <th @onclick="@(() => OnSort("Status"))" style="cursor:pointer">
-                                Status  <i class="@GetSortIconClass("Status")" style="margin-left: 5px;"></i>
+                                Status <i class="@GetSortIconClass("Status") ms-1"></i>
                             </th>
                             <th>Actions</th>
                         </tr>
@@ -87,13 +73,21 @@ else
                         @foreach (var doctor in doctors.Data)
                         {
                             <tr>
-                                <td>@doctor?.FullName</td>
-                                <td>@doctor?.Gender</td>
-                                <td>@doctor?.SpecialistIn</td>
-                                <td>@(doctor?.Status == true ? "Active" : "Inactive")</td>
+                                <td>@doctor.FullName</td>
+                                <td>@doctor.Gender</td>
+                                <td>@doctor.SpecialistIn</td>
                                 <td>
-                                    <button class="btn btn-info btn-sm" @onclick="() => EditDoctor(doctor.Id)">Edit</button>
-                                    <button class="btn btn-danger btn-sm ms-2" @onclick="() => DeleteDoctor(doctor?.Id)">Delete</button>
+                                    <span class="badge bg-@(doctor.Status == true ? "success" : "secondary")">
+                                        @(doctor.Status == true ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info me-2" @onclick="() => EditDoctor(doctor.Id)">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteDoctor(doctor.Id)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
                                 </td>
                             </tr>
                         }
@@ -101,16 +95,17 @@ else
                 </table>
 
                 <div class="d-flex justify-content-between align-items-center mt-3">
-    <div>
-        <span>Total records: @totalRecords</span>
-    </div>
-    <div>
-        <button class="btn btn-secondary me-2" @onclick="PreviousPage" disabled="@(currentPage <= 1)">Previous</button>
-        <span>Page @currentPage of @totalPages</span>
-        <button class="btn btn-secondary ms-2" @onclick="NextPage" disabled="@(currentPage >= totalPages)">Next</button>
-    </div>
-</div>
-
+                    <span>Total records: @totalRecords</span>
+                    <div>
+                        <button class="btn btn-outline-secondary btn-sm me-2" @onclick="PreviousPage" disabled="@(currentPage <= 1)">
+                            <i class="bi bi-chevron-left"></i> Prev
+                        </button>
+                        <span>Page @currentPage of @totalPages</span>
+                        <button class="btn btn-outline-secondary btn-sm ms-2" @onclick="NextPage" disabled="@(currentPage >= totalPages)">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
             }
             else
             {
@@ -120,77 +115,74 @@ else
     </div>
 }
 
-
 @if (showDialog)
 {
-    <div class="modal" style="display:block; background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">@(string.IsNullOrEmpty(selectedDoctorId) ? "Add New Doctor" : "Edit Doctor")</h5>
-                    <button type="button" class="btn-close" @onclick="CloseDialog" aria-label="Close"></button>
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content shadow-sm border-0">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        @(string.IsNullOrEmpty(selectedDoctorId) ? "Add New Doctor" : "Edit Doctor")
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseDialog"></button>
                 </div>
                 <div class="modal-body">
-                    <EditForm Model="@doctorModel" OnValidSubmit="@HandleValidSubmit">
+                    <EditForm Model="@doctorModel" OnValidSubmit="HandleValidSubmit">
                         <DataAnnotationsValidator />
-                        <ValidationSummary />
+                         <ValidationSummary class="text-danger mb-3" />
 
-                        <div class="form-group mb-3">
-                            <label for="fullName">Full Name</label>
-                            <InputText id="fullName" class="form-control" @bind-Value="doctorModel.FullName" />
-                            <ValidationMessage For="@(() => doctorModel.FullName)" />
-                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Full Name</label>
+                                <InputText class="form-control" @bind-Value="doctorModel.FullName" />
+                            </div>                           
 
-                        <div class="form-group mb-3">
-                            <label for="email">Email</label>
-                            <InputText id="email" class="form-control" @bind-Value="doctorModel.Email" />
-                            <ValidationMessage For="@(() => doctorModel.Email)" />
-                        </div>
-
-                        <div class="form-group mb-3">
-                            <label for="gender">Gender</label>
-                            <InputSelect id="gender" class="form-select" @bind-Value="doctorModel.Gender">
-                                <option value="">Select Gender</option>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
-                                <option value="Other">Other</option>
-                            </InputSelect>
-                            <ValidationMessage For="@(() => doctorModel.Gender)" />
-                        </div>
-
-                        <div class="form-group mb-3">
-                            <label for="specialistIn">Specialization</label>
-                            <InputText id="specialistIn" class="form-control" @bind-Value="doctorModel.SpecialistIn" />
-                            <ValidationMessage For="@(() => doctorModel.SpecialistIn)" />
-                        </div>
-
-                        <div class="form-group mb-3">
-                            <label for="status">Status</label>
-                            <InputSelect id="status" class="form-select" @bind-Value="doctorModel.Status">
-                                <option value="true">Active</option>
-                                <option value="false">Inactive</option>
-                            </InputSelect>
-                            <ValidationMessage For="@(() => doctorModel.Status)" />
-                        </div>
-
-                        @if (string.IsNullOrEmpty(selectedDoctorId))
-                        {
-                            <div class="form-group mb-3">
-                                <label for="password">Password</label>
-                                <InputText type="password" id="password" class="form-control" @bind-Value="doctorModel.Password" />
-                                <ValidationMessage For="@(() => doctorModel.Password)" />
+                            <div class="col-md-6">
+                                <label class="form-label">Gender</label>
+                                <InputSelect class="form-select" @bind-Value="doctorModel.Gender">
+                                    <option value="">Select Gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </InputSelect>
                             </div>
 
-                            <div class="form-group mb-3">
-                                <label for="confirmPassword">Confirm Password</label>
-                                <InputText type="password" id="confirmPassword" class="form-control" @bind-Value="doctorModel.ConfirmPassword" />
-                                <ValidationMessage For="@(() => doctorModel.ConfirmPassword)" />
+                            <div class="col-md-6">
+                                <label class="form-label">Specialization</label>
+                                <InputText class="form-control" @bind-Value="doctorModel.SpecialistIn" />
                             </div>
-                        }
 
-                        <div class="modal-footer">
+                            <div class="col-md-6">
+                                <label class="form-label">Status</label>
+                                <InputSelect class="form-select" @bind-Value="doctorModel.Status">
+                                    <option value="true">Active</option>
+                                    <option value="false">Inactive</option>
+                                </InputSelect>
+                            </div>
+
+                            @if (string.IsNullOrEmpty(selectedDoctorId))
+                            {
+                                <div class="col-md-6">
+                                    <label class="form-label">Email</label>
+                                    <InputText class="form-control" @bind-Value="doctorModel.Email"/>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Password</label>
+                                    <InputText type="password" class="form-control" @bind-Value="doctorModel.Password" />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Confirm Password</label>
+                                    <InputText type="password" class="form-control" @bind-Value="doctorModel.ConfirmPassword" />
+                                </div>
+                            }
+                        </div>
+
+                        <div class="modal-footer mt-4">
                             <button type="button" class="btn btn-secondary" @onclick="CloseDialog">Cancel</button>
-                            <button type="submit" class="btn btn-primary">Save</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-1"></i> Save
+                            </button>
                         </div>
                     </EditForm>
                 </div>
@@ -198,6 +190,7 @@ else
         </div>
     </div>
 }
+
 
 @code {
     private DoctorListResponse doctors = new();
@@ -227,6 +220,10 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        if (!await RoleGuard.HasRoleAsync(LocalStorage, "Admin"))
+        {
+            NavigationManager.NavigateTo("/access-denied", forceLoad: true);
+        }
         await LoadDoctors();
     }
 
@@ -393,19 +390,24 @@ else
     }
 
     private async Task DeleteDoctor(string id)
-    {
-        if (string.IsNullOrEmpty(id)) return;
+{
+    if (string.IsNullOrEmpty(id)) return;
 
-        bool confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this doctor?");
-        if (confirm)
+    bool confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this doctor?");
+    if (confirm)
+    {
+        var result = await DoctorService.DeleteDoctorAsync(id);
+        if (result.Success)
         {
-            var result = await DoctorService.DeleteDoctorAsync(id);
-            if (result.Success)
-            {
-                await LoadDoctors();
-            }
+            await LoadDoctors();
+            await JSRuntime.InvokeVoidAsync("alert", "Doctor deleted successfully");
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", result.Message);
         }
     }
+}
 
     private async Task HandleValidSubmit()
     {

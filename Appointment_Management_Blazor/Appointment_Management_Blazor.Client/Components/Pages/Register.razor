@@ -1,67 +1,62 @@
 ﻿@page "/register"
+
 @using System.Linq.Expressions
 @inject IAccountClientService AccountClientService
 @inject NavigationManager Navigation
 
-<h3 class="text-center mb-4">Register</h3>
+<h3 class="text-center mb-4 fw-semibold text-primary">Create Your Account</h3>
 
-<div class="card shadow-sm" style="max-width: 600px; margin: 0 auto;">
-    <div class="card-body">
+<div class="card shadow-lg border-0" style="max-width: 600px; margin: 0 auto;">
+    <div class="card-body p-4">
         <EditForm EditContext="@editContext" OnValidSubmit="HandleRegister">
             <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" />
+            <ValidationSummary class="text-danger mb-3" />
 
-            <div class="form-group mb-3">
-                <label for="fullName" class="form-label">Full Name *</label>
-                <InputText id="fullName" @bind-Value="model.FullName" class="form-control"
+            <div class="mb-3">
+                <label class="form-label">Full Name</label>
+                <InputText @bind-Value="model.FullName" class="form-control" placeholder="John Doe"
                            @oninput="() => ClearValidationFor(() => model.FullName)" />
-                <ValidationMessage For="@(() => model.FullName)" class="text-danger" />
             </div>
 
-            <div class="form-group mb-3">
-                <label for="email" class="form-label">Email *</label>
-                <InputText id="email" @bind-Value="model.Email" class="form-control"
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <InputText @bind-Value="model.Email" class="form-control" placeholder="example@mail.com"
                            @oninput="() => ClearValidationFor(() => model.Email)" />
-                <ValidationMessage For="@(() => model.Email)" class="text-danger" />
             </div>
 
-            <div class="form-group mb-3">
-                <label for="gender" class="form-label">Gender *</label>
-                <InputSelect id="gender" @bind-Value="model.Gender" class="form-select"
+            <div class="mb-3">
+                <label class="form-label">Gender</label>
+                <InputSelect @bind-Value="model.Gender" class="form-select"
                              @onchange="() => ClearValidationFor(() => model.Gender)">
                     <option value="">-- Select Gender --</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                 </InputSelect>
-                <ValidationMessage For="@(() => model.Gender)" class="text-danger" />
             </div>
 
-            <div class="form-group mb-3">
-                <label for="joinDate" class="form-label">Join Date *</label>
-                <InputDate id="joinDate" @bind-Value="model.JoinDate" class="form-control" />
-                <ValidationMessage For="@(() => model.JoinDate)" class="text-danger" />
+            <div class="mb-3">
+                <label class="form-label">Join Date</label>
+                <InputDate @bind-Value="model.JoinDate" class="form-control" disabled />
             </div>
 
-            <div class="form-group mb-3">
-                <label for="password" class="form-label">Password *</label>
-                <InputText id="password" @bind-Value="model.Password" type="password" class="form-control"
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <InputText @bind-Value="model.Password" type="password" class="form-control"
                            @oninput="() => ClearValidationFor(() => model.Password)" />
-                <ValidationMessage For="@(() => model.Password)" class="text-danger" />
             </div>
 
-            <div class="form-group mb-4">
-                <label for="confirmPassword" class="form-label">Confirm Password *</label>
-                <InputText id="confirmPassword" @bind-Value="model.ConfirmPassword" type="password" class="form-control"
+            <div class="mb-4">
+                <label class="form-label">Confirm Password</label>
+                <InputText @bind-Value="model.ConfirmPassword" type="password" class="form-control"
                            @oninput="() => ClearValidationFor(() => model.ConfirmPassword)" />
-                <ValidationMessage For="@(() => model.ConfirmPassword)" class="text-danger" />
             </div>
 
             <div class="d-grid">
-                <button type="submit" class="btn btn-primary" disabled="@isProcessing">
+                <button type="submit" class="btn btn-primary fw-semibold" disabled="@isProcessing">
                     @if (isProcessing)
                     {
                         <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                        <span> Processing...</span>
+                        <span class="ms-2">Registering...</span>
                     }
                     else
                     {
@@ -73,10 +68,13 @@
 
         @if (!string.IsNullOrEmpty(responseMessage))
         {
-            <div class="alert @(isSuccess ? "alert-success" : "alert-danger") mt-3">@responseMessage</div>
+            <div class="alert mt-3 @(isSuccess ? "alert-success" : "alert-danger") shadow-sm">
+                @responseMessage
+            </div>
         }
     </div>
 </div>
+
 
 @code {
     private RegisterViewModel model { get; set; } = new RegisterViewModel();
@@ -106,19 +104,15 @@
         StateHasChanged();
 
         try
-        {
-            // if (registerForm.EditContext.Validate()) // Validate using EditContext
-            // {
-                var result = await AccountClientService.RegisterAsync(model);
-                responseMessage = result.Message;
-                isSuccess = result.IsSuccess;
+        {          
+            var result = await AccountClientService.RegisterAsync(model);
+            responseMessage = result.Message;
+            isSuccess = result.IsSuccess;
 
-                if (isSuccess)
-                {
-                    await Task.Delay(2000);
-                    Navigation.NavigateTo("/login", forceLoad: true);
-                }
-            //}
+            if (isSuccess)
+            {
+                responseMessage = "Email confirmation link sent. Please check your mail.";
+            }
         }
         catch (Exception ex)
         {

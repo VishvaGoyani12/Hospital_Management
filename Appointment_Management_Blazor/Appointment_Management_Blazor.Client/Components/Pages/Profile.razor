@@ -4,52 +4,65 @@
 @inject NavigationManager Navigation
 @inject ILocalStorageService LocalStorage
 
-<h3>My Profile</h3>
+
+<h3 class="mb-4">My Profile</h3>
 
 @if (isLoading)
 {
-    <div class="text-center">
+    <div class="text-center my-5">
         <div class="spinner-border" role="status">
             <span class="visually-hidden">Loading...</span>
         </div>
-        <p>Loading profile...</p>
+        <p class="mt-2">Loading profile...</p>
     </div>
 }
 else if (profileResponse != null && profileResponse.IsSuccess)
 {
-    <EditForm Model="@profileResponse.Profile" OnValidSubmit="@HandleUpdateProfile">
-        <DataAnnotationsValidator />
-        <ValidationSummary />
+    <div class="card shadow-lg border-0" style="max-width: 600px; margin: 0 auto;">
+        <div class="card-body p-4">
+            <EditForm Model="@profileResponse.Profile" OnValidSubmit="@HandleUpdateProfile">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger mb-3" />
 
-        <div class="form-group mb-3">
-            <label class="form-label">Full Name</label>
-            <InputText @bind-Value="@profileResponse.Profile.FullName" class="form-control" />
-            <ValidationMessage For="@(() => profileResponse.Profile.FullName)" />
+                <div class="mb-3">
+                    <label class="form-label">Full Name</label>
+                    <InputText @bind-Value="@profileResponse.Profile.FullName" class="form-control" />
+                    <ValidationMessage For="@(() => profileResponse.Profile.FullName)" class="text-danger small" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Gender</label>
+                    <InputSelect @bind-Value="@profileResponse.Profile.Gender" class="form-control">
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </InputSelect>
+                    <ValidationMessage For="@(() => profileResponse.Profile.Gender)" class="text-danger small" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <InputText @bind-Value="@profileResponse.Profile.Email" class="form-control" disabled />
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary fw-semibold">Update Profile</button>
+                </div>
+            </EditForm>
+
+            @if (!string.IsNullOrEmpty(Message))
+            {
+                <div class="alert mt-3 @(IsSuccess ? "alert-success" : "alert-danger") shadow-sm">
+                    @Message
+                </div>
+            }
         </div>
-
-        <div class="form-group mb-3">
-            <label class="form-label">Gender</label>
-            <InputSelect @bind-Value="@profileResponse.Profile.Gender" class="form-control">
-                <option value="">Select Gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-            </InputSelect>
-            <ValidationMessage For="@(() => profileResponse.Profile.Gender)" />
-        </div>
-
-        <div class="form-group mb-3">
-            <label class="form-label">Email</label>
-            <InputText @bind-Value="@profileResponse.Profile.Email" class="form-control" disabled />
-            <ValidationMessage For="@(() => profileResponse.Profile.Email)" />
-        </div>
-
-        <button type="submit" class="btn btn-primary">Update Profile</button>
-    </EditForm>
+    </div>
 }
 else
 {
-    <div class="alert alert-danger">
+    <div class="alert alert-danger shadow-sm">
         @errorMessage
         @if (isUnauthorized)
         {
@@ -60,10 +73,6 @@ else
     </div>
 }
 
-@if (!string.IsNullOrEmpty(Message))
-{
-    <div class="alert @(IsSuccess ? "alert-success" : "alert-danger") mt-3">@Message</div>
-}
 
 @code {
     private ProfileResponse profileResponse = new();

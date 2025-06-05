@@ -49,10 +49,11 @@ namespace Appointment_Management_Blazor.Controllers
         [HttpDelete("Delete/{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var success = await _patientService.DeletePatientAsync(id);
-            if (!success) return NotFound();
+            var result = await _patientService.DeletePatientAsync(id);
+            if (!result.Success)
+                return BadRequest(result.Message);
 
-            return Ok(new { success = true });
+            return Ok(result.Message);
         }
 
     }

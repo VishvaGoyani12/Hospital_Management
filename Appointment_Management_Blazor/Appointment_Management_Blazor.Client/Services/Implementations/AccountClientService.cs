@@ -103,13 +103,25 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    var content = await response.Content.ReadAsStringAsync();
-                    return new AuthResponse
+                    var errorResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
+                    if (errorResponse != null && !string.IsNullOrEmpty(errorResponse.Message))
                     {
-                        IsSuccess = false,
-                        Message = content
-                    };
+                        return new AuthResponse
+                        {
+                            IsSuccess = false,
+                            Message = errorResponse.Message
+                        };
+                    }
+                    else
+                    {
+                        return new AuthResponse
+                        {
+                            IsSuccess = false,
+                            Message = "Login failed with unknown error."
+                        };
+                    }
                 }
+
 
                 var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
 

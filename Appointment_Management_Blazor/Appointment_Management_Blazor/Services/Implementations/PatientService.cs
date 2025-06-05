@@ -118,24 +118,31 @@ namespace Appointment_Management_Blazor.Services.Implementations
             return true;
         }
 
-        public async Task<bool> DeletePatientAsync(int id)
+        public async Task<(bool Success, string Message)> DeletePatientAsync(int id)
         {
             var patient = await _context.Patients
                 .Include(p => p.ApplicationUser)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
-            if (patient == null) return false;
+            if (patient == null)
+                return (false, "Patient not found");
 
-            // Optional: If you want to delete the associated ApplicationUser too
+            var hasAppointments = await _context.Appointments
+                .AnyAsync(a => a.PatientId == patient.Id &&
+                              (a.Status == "Pending" || a.Status == "Confirmed"));
+
+            if (hasAppointments)
+                return (false, "Cannot delete patient with existing pending or confirmed appointments");
+
             if (patient.ApplicationUser != null)
             {
-                _context.Users.Remove(patient.ApplicationUser); // Remove from Identity
+                _context.Users.Remove(patient.ApplicationUser); 
             }
 
-            _context.Patients.Remove(patient); // Remove from Patient table
+            _context.Patients.Remove(patient); 
             await _context.SaveChangesAsync();
 
-            return true;
+            return (true, "Patient deleted successfully");
         }
 
     }

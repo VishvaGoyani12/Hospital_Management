@@ -7,7 +7,6 @@ namespace Appointment_Management_Blazor.Services.Interfaces
         Task<object> GetAllPatientsAsync(PatientFilterModel filter);
         Task<PatientViewModel?> GetPatientByIdAsync(int id);
         Task<bool> UpdatePatientAsync(PatientViewModel model);
-        Task<bool> DeletePatientAsync(int id);
-
+        Task<(bool Success, string Message)> DeletePatientAsync(int id); 
     }
 }

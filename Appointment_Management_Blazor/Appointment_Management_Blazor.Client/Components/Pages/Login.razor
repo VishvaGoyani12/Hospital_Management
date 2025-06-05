@@ -1,4 +1,5 @@
 ﻿@page "/login"
+
 @inject IAccountClientService AccountClientService
 @inject NavigationManager NavigationManager
 @inject Blazored.LocalStorage.ILocalStorageService localStorage
@@ -10,77 +11,68 @@
     </div>
 }
 
-<section class="py-5">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-12 col-sm-10 col-md-6 col-lg-5 col-xl-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-primary text-white text-center">
-                        <h5 class="mb-0 fw-semibold"><i class="bi bi-box-arrow-in-right me-2"></i>Sign In</h5>
-                    </div>
-                    <div class="card-body px-4 py-4">
-                        <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
-                            <DataAnnotationsValidator />
-                            <ValidationSummary class="alert alert-danger p-2 small" />
+<h3 class="text-center mb-4 fw-semibold text-primary">Login</h3>
 
-                            <div class="mb-3">
-                                <label class="form-label">Email</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light">
-                                        <i class="bi bi-envelope text-muted"></i>
-                                    </span>
-                                    <InputText @bind-Value="loginModel.Email" class="form-control" placeholder="user@example.com" />
-                                </div>
-                                <ValidationMessage For="@(() => loginModel.Email)" class="text-danger small" />
-                            </div>
+<div class="card shadow-lg border-0" style="max-width: 600px; margin: 0 auto;">
+    <div class="card-body p-4">
+        <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" />
 
-                            <div class="mb-3">
-                                <label class="form-label">Password</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light">
-                                        <i class="bi bi-lock text-muted"></i>
-                                    </span>
-                                    <InputText @bind-Value="loginModel.Password" type="password" class="form-control" placeholder="••••••••" />
-                                </div>
-                                <ValidationMessage For="@(() => loginModel.Password)" class="text-danger small" />
-                            </div>
-
-                            <div class="d-grid mt-4">
-                                <button type="submit" class="btn btn-primary" disabled="@isProcessing">
-                                    @if (isProcessing)
-                                    {
-                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                                        <span>Signing in...</span>
-                                                                        }
-                                    else
-                                    {
-                                        <i class="bi bi-box-arrow-in-right me-2"></i>
-                                        <span>Sign In</span>
-                                                                        }
-                                </button>
-                            </div>
-                        </EditForm>
-
-                        @if (!string.IsNullOrEmpty(message))
-                        {
-                            <div class="alert @(isSuccess ? "alert-success" : "alert-danger") mt-3 small">
-                                <i class="bi @(isSuccess ? "bi-check-circle" : "bi-exclamation-triangle") me-2"></i>
-                                @message
-                            </div>
-                        }
-                    </div>
-                    <div class="card-footer bg-light text-center py-3">
-                        <div class="small">
-                            <a href="/register" class="text-decoration-none">Create account</a>
-                            <span class="mx-2 text-muted">|</span>
-                            <a href="/forgot-password" class="text-decoration-none">Forgot password?</a>
-                        </div>
-                    </div>
+            <div class="form-group mb-3">
+                <label for="email" class="form-label">Email *</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light">
+                        <i class="bi bi-envelope text-muted"></i>
+                    </span>
+                    <InputText id="email" @bind-Value="loginModel.Email" class="form-control" placeholder="user@example.com" />
                 </div>
             </div>
+
+            <div class="form-group mb-4">
+                <label for="password" class="form-label">Password *</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light">
+                        <i class="bi bi-lock text-muted"></i>
+                    </span>
+                    <InputText id="password" @bind-Value="loginModel.Password" type="password" class="form-control" placeholder="••••••••" />
+                </div>
+            </div>
+
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary" disabled="@isProcessing">
+                    @if (isProcessing)
+                    {
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        <span> Signing in...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-box-arrow-in-right me-1"></i>
+                        <span>Sign In</span>
+                    }
+                </button>
+            </div>
+        </EditForm>
+
+        @if (!string.IsNullOrEmpty(message))
+        {
+            <div class="alert @(isSuccess ? "alert-success" : "alert-danger") mt-3">
+                <i class="bi @(isSuccess ? "bi-check-circle" : "bi-exclamation-triangle") me-2"></i>
+                @message
+            </div>
+        }
+    </div>
+
+    <div class="card-footer bg-light text-center py-3">
+        <div class="small">
+            <a href="/register" class="text-decoration-none">Create account</a>
+            <span class="mx-2 text-muted">|</span>
+            <a href="/forgot-password" class="text-decoration-none">Forgot password?</a>
         </div>
     </div>
-</section>
+</div>
+
 
 @code {
     private LoginViewModel loginModel = new LoginViewModel();
@@ -119,18 +111,13 @@
 
             if (result.IsSuccess && !string.IsNullOrEmpty(result.Token))
             {
-                // Store token first
                 await localStorage.RemoveItemAsync("authToken");
                 await localStorage.RemoveItemAsync("jwt_token");
-
-                // Store the new token with consistent key
                 await localStorage.SetItemAsync("jwt_token", result.Token);
 
-                // Parse roles
                 var roles = JwtParser.GetRolesFromToken(result.Token).ToList();
                 Console.WriteLine($"ROLES FOUND: {string.Join(", ", roles)}");
 
-                // Debug - print all claims
                 var claims = ParseAllClaims(result.Token);
                 Console.WriteLine("ALL CLAIMS:");
                 foreach (var claim in claims)
@@ -138,36 +125,40 @@
                     Console.WriteLine($"{claim.Key}: {claim.Value}");
                 }
 
-                // Force UI update before navigation
                 StateHasChanged();
-                await Task.Delay(100);
-
-                // Case-insensitive role comparison
                 if (roles.Any(r => r.Equals("Admin", StringComparison.OrdinalIgnoreCase)))
                 {
-                    Console.WriteLine("Redirecting to /Doctor");
                     NavigationManager.NavigateTo("/Doctor", forceLoad: true);
                 }
                 else if (roles.Any(r => r.Equals("Doctor", StringComparison.OrdinalIgnoreCase)))
                 {
-                    Console.WriteLine("Redirecting to /DoctorAppointment");
                     NavigationManager.NavigateTo("/DoctorAppointment", forceLoad: true);
                 }
                 else if (roles.Any(r => r.Equals("Patient", StringComparison.OrdinalIgnoreCase)))
                 {
-                    Console.WriteLine("Redirecting to /PatientAppointment");
                     NavigationManager.NavigateTo("/PatientAppointment", forceLoad: true);
                 }
                 else
                 {
-                    Console.WriteLine("No matching role, redirecting to home");
                     NavigationManager.NavigateTo("/", forceLoad: true);
                 }
+            }
+            else if (!result.IsSuccess)
+            {
+                message = result.Message ?? "Invalid email or password. Please try again.";
+                isSuccess = false;
             }
         }
         catch (Exception ex)
         {
-            message = $"Login failed: {ex.Message}";
+            if (ex.Message.Contains("token") || ex.Message.Contains("null"))
+            {
+                message = "Invalid email or password. Please try again.";
+            }
+            else
+            {
+                message = "Login failed. Please check your credentials and try again.";
+            }
             isSuccess = false;
             Console.WriteLine($"Login error: {ex}");
         }
@@ -177,6 +168,7 @@
             StateHasChanged();
         }
     }
+
 
     private Dictionary<string, string> ParseAllClaims(string jwtToken)
     {

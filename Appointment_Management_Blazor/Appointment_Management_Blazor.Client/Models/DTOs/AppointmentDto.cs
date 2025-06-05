@@ -1,4 +1,6 @@
-﻿namespace Appointment_Management_Blazor.Client.Models.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Appointment_Management_Blazor.Client.Models.DTOs
 {
     public class AppointmentListResponse
     {
@@ -13,6 +15,7 @@
     {
         public int Id { get; set; }
         public int PatientId { get; set; }
+        [Required(ErrorMessage = "Please select a doctor.")]
         public int DoctorId { get; set; }
         public string? PatientName { get; set; }
         public string? DoctorName { get; set; }

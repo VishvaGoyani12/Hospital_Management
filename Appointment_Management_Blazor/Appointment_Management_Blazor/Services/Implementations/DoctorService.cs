@@ -270,8 +270,13 @@ namespace Appointment_Management_Blazor.Services.Implementations
             if (doctor == null)
                 return (false, "Doctor not found");
 
-            if (await _context.Appointments.AnyAsync(a => a.DoctorId == doctor.Id))
-                return (false, "Cannot delete doctor with existing appointments");
+            // Check for any appointments with status "Pending" or "Confirmed"
+            var hasAppointments = await _context.Appointments
+                .AnyAsync(a => a.DoctorId == doctor.Id &&
+                              (a.Status == "Pending" || a.Status == "Confirmed"));
+
+            if (hasAppointments)
+                return (false, "Cannot delete doctor with existing pending or confirmed appointments");
 
             _context.Doctors.Remove(doctor);
             await _context.SaveChangesAsync();

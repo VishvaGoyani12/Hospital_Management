@@ -6,6 +6,7 @@ namespace Appointment_Management_Blazor.Shared.Models
     {
         public int Id { get; set; }
         public int PatientId { get; set; }
+        [Required(ErrorMessage = "Please select a doctor.")]
         public int DoctorId { get; set; }
         public DateTime AppointmentDate { get; set; }
         public string Description { get; set; } = string.Empty;

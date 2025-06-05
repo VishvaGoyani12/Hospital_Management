@@ -1,5 +1,5 @@
-﻿// Client/Helper/AuthHeaderHandler.cs
-using Blazored.LocalStorage;
+﻿using Blazored.LocalStorage;
+using Microsoft.AspNetCore.Components;
 using System.Net.Http.Headers;
 
 namespace Appointment_Management_Blazor.Client.Helper
@@ -7,11 +7,13 @@ namespace Appointment_Management_Blazor.Client.Helper
     public class AuthHeaderHandler : DelegatingHandler
     {
         private readonly ILocalStorageService _localStorage;
+        private readonly NavigationManager _navigation;
         private const string TokenKey = "jwt_token";
 
-        public AuthHeaderHandler(ILocalStorageService localStorage)
+        public AuthHeaderHandler(ILocalStorageService localStorage, NavigationManager navigation)
         {
             _localStorage = localStorage;
+            _navigation = navigation;
         }
 
         protected override async Task<HttpResponseMessage> SendAsync(
@@ -38,7 +40,15 @@ namespace Appointment_Management_Blazor.Client.Helper
                 Console.WriteLine($"Error setting auth header: {ex.Message}");
             }
 
-            return await base.SendAsync(request, cancellationToken);
+            var response = await base.SendAsync(request, cancellationToken);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                // Redirect to Access Denied page
+                _navigation.NavigateTo("/access-denied");
+            }
+
+            return response;
         }
     }
 }

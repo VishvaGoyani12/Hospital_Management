@@ -133,35 +133,19 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
             }
         }
 
-        public async Task<ApiResponse> DeletePatientAsync(int id)
+        public async Task<(bool Success, string Message)> DeletePatientAsync(int id)
         {
-            try
+            var response = await _httpClient.DeleteAsync($"api/patient/delete/{id}");
+
+            if (response.IsSuccessStatusCode)
             {
-                await AddJwtTokenAsync();
-
-                var response = await _httpClient.DeleteAsync($"api/patient/Delete/{id}");
-
-                if (response.IsSuccessStatusCode)
-                {
-                    return await response.Content.ReadFromJsonAsync<ApiResponse>();
-                }
-                else
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    return new ApiResponse
-                    {
-                        Success = false,
-                        Message = $"Error: {response.StatusCode} - {errorContent}"
-                    };
-                }
+                var message = await response.Content.ReadAsStringAsync();
+                return (true, message);
             }
-            catch (Exception ex)
+            else
             {
-                return new ApiResponse
-                {
-                    Success = false,
-                    Message = $"Exception: {ex.Message}"
-                };
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                return (false, errorMessage);
             }
         }
     }

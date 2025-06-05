@@ -3,46 +3,45 @@
 @inject Blazored.LocalStorage.ILocalStorageService localStorage
 @inject NavigationManager NavigationManager
 
-<div class="d-flex flex-column min-vh-100" style="background-color: #ffffff;">
+<div class="d-flex flex-column min-vh-100 bg-light">
     <!-- Header -->
-    <header class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="/">
+    <header class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm py-3">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-4" href="/">
                 <i class="bi bi-calendar2-week-fill me-2"></i>AppointPro
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
                 <span class="navbar-toggler-icon"></span>
             </button>
+
             <div class="collapse navbar-collapse" id="navbarMain">
-                <!-- Left side navigation -->
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     @if (IsAuthenticated)
                     {
                         if (userRoles.Contains("Admin", StringComparer.OrdinalIgnoreCase))
                         {
                             <li class="nav-item">
-                                <NavLink class="nav-link" href="/Patient">Patient Management</NavLink>
+                                <NavLink class="nav-link" href="/Patient">Patients</NavLink>
                             </li>
                             <li class="nav-item">
-                                <NavLink class="nav-link" href="/Doctor">Doctor Management</NavLink>
+                                <NavLink class="nav-link" href="/Doctor">Doctors</NavLink>
                             </li>
                         }
                         if (userRoles.Contains("Patient", StringComparer.OrdinalIgnoreCase))
                         {
                             <li class="nav-item">
                                 <NavLink class="nav-link" href="/PatientAppointment">Book Appointment</NavLink>
-                            </li>                           
+                            </li>
                         }
                         if (userRoles.Contains("Doctor", StringComparer.OrdinalIgnoreCase))
                         {
                             <li class="nav-item">
-                                <NavLink class="nav-link" href="/DoctorAppointment">Manage Appointment</NavLink>
+                                <NavLink class="nav-link" href="/DoctorAppointment">Manage Appointments</NavLink>
                             </li>
                         }
                     }
                 </ul>
 
-                <!-- Right side navigation -->
                 <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                     @if (!IsAuthenticated)
                     {
@@ -60,20 +59,12 @@
                     else
                     {
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-person-circle me-1"></i>@userEmail
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <NavLink class="dropdown-item" href="/profile">
-                                        <i class="bi bi-person me-2"></i>Update Profile
-                                    </NavLink>
-                                </li>
-                                <li>
-                                    <NavLink class="dropdown-item" href="/change-password">
-                                        <i class="bi bi-lock me-2"></i>Change Password
-                                    </NavLink>
-                                </li>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                <li><NavLink class="dropdown-item" href="/profile"><i class="bi bi-person me-2"></i>Profile</NavLink></li>
+                                <li><NavLink class="dropdown-item" href="/change-password"><i class="bi bi-lock me-2"></i>Change Password</NavLink></li>
                                 <li><hr class="dropdown-divider" /></li>
                                 <li>
                                     <button class="dropdown-item text-danger" @onclick="Logout">
@@ -88,12 +79,19 @@
         </div>
     </header>
 
-    <!-- Main -->
+    <!-- Main Content -->
     <main class="flex-grow-1 py-4">
         <div class="container">
             @Body
         </div>
     </main>
+
+    <!-- Footer (optional) -->
+    <footer class="bg-white text-muted py-3 shadow-sm border-top">
+        <div class="container text-center">
+            <small>&copy; @DateTime.Now.Year - AppointPro | All rights reserved.</small>
+        </div>
+    </footer>
 </div>
 
 @code {

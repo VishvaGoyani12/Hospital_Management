@@ -1,7 +1,8 @@
-﻿using Appointment_Management_Blazor.Client.Models.DTOs;
-using Appointment_Management_Blazor.Services.Interfaces;
+﻿
+using Appointment_Management_Blazor.Interfaces.Interfaces;
 using Appointment_Management_Blazor.Shared;
 using Appointment_Management_Blazor.Shared.Models;
+using Appointment_Management_Blazor.Shared.Models.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

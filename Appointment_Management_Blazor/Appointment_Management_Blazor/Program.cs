@@ -2,10 +2,11 @@
 using Appointment_Management_Blazor.Client.Helper;
 using Appointment_Management_Blazor.Client.Services.Implementations;
 using Appointment_Management_Blazor.Client.Services.Interfaces;
-using Appointment_Management_Blazor.Data;
-using Appointment_Management_Blazor.Helper;
+using Appointment_Management_Blazor.EntityFrameworkCore.Data;
+using Appointment_Management_Blazor.Interfaces.Interfaces;
+using Appointment_Management_Blazor.Repository.Helper;
+using Appointment_Management_Blazor.Repository.Implementations;
 using Appointment_Management_Blazor.Services.Implementations;
-using Appointment_Management_Blazor.Services.Interfaces;
 using Appointment_Management_Blazor.Shared;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -270,7 +271,7 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-    await Appointment_Management_Blazor.Data.SeedData.DbSeeder.SeedRolesAndAdminAsync(services);
+    await Appointment_Management_Blazor.EntityFrameworkCore.Data.SeedData.DbSeeder.SeedRolesAndAdminAsync(services);
 }
 
 

@@ -17,7 +17,6 @@
     <div class="card-body p-4">
         <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
             <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" />
 
             <div class="form-group mb-3">
                 <label for="email" class="form-label">Email *</label>
@@ -27,6 +26,7 @@
                     </span>
                     <InputText id="email" @bind-Value="loginModel.Email" class="form-control" placeholder="user@example.com" />
                 </div>
+                <ValidationMessage For="@(() => loginModel.Email)" class="text-danger" />
             </div>
 
             <div class="form-group mb-4">
@@ -37,6 +37,7 @@
                     </span>
                     <InputText id="password" @bind-Value="loginModel.Password" type="password" class="form-control" placeholder="••••••••" />
                 </div>
+                <ValidationMessage For="@(() => loginModel.Password)" class="text-danger" />
             </div>
 
             <div class="d-grid">
@@ -54,6 +55,7 @@
                 </button>
             </div>
         </EditForm>
+
 
         @if (!string.IsNullOrEmpty(message))
         {

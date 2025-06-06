@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Appointment_Management_Blazor.Client.Models.DTOs
+namespace Appointment_Management_Blazor.Shared.Models.DTOs
 {
     public class AppointmentListResponse
     {

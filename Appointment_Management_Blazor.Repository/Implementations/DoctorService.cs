@@ -1,14 +1,13 @@
-﻿using Appointment_Management_Blazor.Client.Models.DTOs;
-using Appointment_Management_Blazor.Data;
-using Appointment_Management_Blazor.Services.Interfaces;
+﻿using Appointment_Management_Blazor.EntityFrameworkCore.Data;
+using Appointment_Management_Blazor.Interfaces.Interfaces;
 using Appointment_Management_Blazor.Shared;
 using Appointment_Management_Blazor.Shared.Models;
+using Appointment_Management_Blazor.Shared.Models.DTOs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Dynamic.Core;
 
-namespace Appointment_Management_Blazor.Services.Implementations
+namespace Appointment_Management_Blazor.Repository.Implementations
 {
     public class DoctorService : IDoctorService
     {
@@ -25,14 +24,12 @@ namespace Appointment_Management_Blazor.Services.Implementations
             _roleManager = roleManager;
         }
 
-        // Services/DoctorService.cs
         public async Task<DoctorListResponse> GetAllDoctorsAsync(DoctorFilterModel filters)
         {
             var query = _context.Doctors
                 .Include(d => d.ApplicationUser)
                 .AsQueryable();
 
-            // Apply search filter
             if (!string.IsNullOrEmpty(filters.SearchValue))
             {
                 query = query.Where(d =>
@@ -41,25 +38,21 @@ namespace Appointment_Management_Blazor.Services.Implementations
                     d.ApplicationUser.Email.Contains(filters.SearchValue));
             }
 
-            // Apply status filter if provided
             if (filters.Status.HasValue)
             {
                 query = query.Where(d => d.Status == filters.Status.Value);
             }
 
-            // Apply gender filter if provided
             if (!string.IsNullOrEmpty(filters.Gender))
             {
                 query = query.Where(d => d.ApplicationUser.Gender == filters.Gender);
             }
 
-            // Apply specialization filter if provided
             if (!string.IsNullOrEmpty(filters.SpecialistIn))
             {
                 query = query.Where(d => d.SpecialistIn == filters.SpecialistIn);
             }
 
-            // Get total count before pagination
             var totalRecords = await query.CountAsync();
 
             // Apply sorting
@@ -93,7 +86,6 @@ namespace Appointment_Management_Blazor.Services.Implementations
                             : query.OrderBy(d => d.Status);
                         break;
                     default:
-                        // fallback if unknown column
                         query = query.OrderBy(d => d.ApplicationUser.FullName);
                         break;
                 }
@@ -214,13 +206,28 @@ namespace Appointment_Management_Blazor.Services.Implementations
                     return (false, "Doctor not found");
                 }
 
+                // Check if doctor has pending or confirmed appointments
+                var hasAppointments = await _context.Appointments
+                    .AnyAsync(a => a.DoctorId == doctor.Id &&
+                                  (a.Status == "Pending" || a.Status == "Confirmed"));
+
+                // Prevent deactivation if has appointments
+                if (hasAppointments && model.Status == false)
+                {
+                    return (false, "Cannot deactivate doctor with existing pending or confirmed appointments");
+                }
+
                 // Update user
                 user.FullName = model.FullName;
                 user.Gender = model.Gender;
-                user.Email = model.Email;
-                user.UserName = model.Email;
-                user.NormalizedEmail = model.Email.ToUpper();
-                user.NormalizedUserName = model.Email.ToUpper();
+
+                if (!string.IsNullOrEmpty(model.Email))
+                {
+                    user.Email = model.Email;
+                    user.UserName = model.Email;
+                    user.NormalizedEmail = model.Email.ToUpper();
+                    user.NormalizedUserName = model.Email.ToUpper();
+                }
 
                 var userResult = await _userManager.UpdateAsync(user);
                 if (!userResult.Succeeded)
@@ -253,6 +260,8 @@ namespace Appointment_Management_Blazor.Services.Implementations
                 return (false, $"Error updating doctor: {ex.Message}");
             }
         }
+
+
 
         public async Task<(bool Success, string Message)> DeleteDoctorAsync(string id)
         {

@@ -1,11 +1,13 @@
-﻿using Appointment_Management_Blazor.Data;
-using Appointment_Management_Blazor.Services.Interfaces;
+﻿using Appointment_Management_Blazor.EntityFrameworkCore.Data;
+using Appointment_Management_Blazor.Interfaces.Interfaces;
 using Appointment_Management_Blazor.Shared;
 using Appointment_Management_Blazor.Shared.HelperModel;
 using Appointment_Management_Blazor.Shared.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;

@@ -1,6 +1,7 @@
-﻿using Appointment_Management_Blazor.Client.Models.DTOs;
+﻿
 using Appointment_Management_Blazor.Client.Services.Interfaces;
 using Appointment_Management_Blazor.Shared.Models;
+using Appointment_Management_Blazor.Shared.Models.DTOs;
 using Blazored.LocalStorage;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -96,13 +97,14 @@ public class DoctorClientService : IDoctorClientService
                 return await response.Content.ReadFromJsonAsync<ApiResponse>();
 
             var errorContent = await response.Content.ReadAsStringAsync();
-            return new ApiResponse { Success = false, Message = $"Error: {response.StatusCode} - {errorContent}" };
+            return new ApiResponse { Success = false, Message = errorContent.Trim('"') }; // remove quotes if any
         }
         catch (Exception ex)
         {
             return new ApiResponse { Success = false, Message = $"Exception: {ex.Message}" };
         }
     }
+
 
     public async Task<ApiResponse> DeleteDoctorAsync(string id)
     {

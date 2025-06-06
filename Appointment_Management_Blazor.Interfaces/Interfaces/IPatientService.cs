@@ -1,6 +1,6 @@
 ﻿using Appointment_Management_Blazor.Shared.Models;
 
-namespace Appointment_Management_Blazor.Services.Interfaces
+namespace Appointment_Management_Blazor.Interfaces.Interfaces
 {
     public interface IPatientService
     {

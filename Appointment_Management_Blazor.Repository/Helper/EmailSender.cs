@@ -1,9 +1,11 @@
 ﻿using MailKit.Net.Smtp;
 using MailKit.Security;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using MimeKit;
+using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Identity.UI.Services;
 
-namespace Appointment_Management_Blazor.Helper
+
+namespace Appointment_Management_Blazor.Repository.Helper
 {
     public class EmailSender : IEmailSender
     {

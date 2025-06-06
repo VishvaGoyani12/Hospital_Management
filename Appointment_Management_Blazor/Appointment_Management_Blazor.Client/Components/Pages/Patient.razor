@@ -1,4 +1,5 @@
 ﻿@page "/patient"
+@using Appointment_Management_Blazor.Shared.Models.DTOs
 
 @inject IPatientClientService PatientService
 @inject NavigationManager NavigationManager
@@ -120,39 +121,45 @@ else
                 </div>
                 <div class="modal-body">
                     <EditForm Model="@patientModel" OnValidSubmit="@HandleValidSubmit">
-                        <DataAnnotationsValidator />
-                        <ValidationSummary class="alert alert-danger small" />
+    <DataAnnotationsValidator />
 
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Full Name</label>
-                                <InputText class="form-control" @bind-Value="patientModel.FullName" disabled />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Gender</label>
-                                <InputText class="form-control" @bind-Value="patientModel.Gender" disabled />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Join Date</label>
-                                <InputDate class="form-control" @bind-Value="patientModel.JoinDate" disabled />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Status</label>
-                                <InputSelect class="form-select" @bind-Value="patientModel.Status">
-                                    <option value="true">Active</option>
-                                    <option value="false">Inactive</option>
-                                </InputSelect>
-                                <ValidationMessage For="@(() => patientModel.Status)" class="text-danger small" />
-                            </div>
-                        </div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Full Name</label>
+            <InputText class="form-control" @bind-Value="patientModel.FullName" disabled />
+            <ValidationMessage For="@(() => patientModel.FullName)" class="text-danger small" />
+        </div>
 
-                        <div class="modal-footer mt-4">
-                            <button type="button" class="btn btn-secondary" @onclick="CloseDialog">Cancel</button>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-save me-1"></i> Save
-                            </button>
-                        </div>
-                    </EditForm>
+        <div class="col-md-6">
+            <label class="form-label">Gender</label>
+            <InputText class="form-control" @bind-Value="patientModel.Gender" disabled />
+            <ValidationMessage For="@(() => patientModel.Gender)" class="text-danger small" />
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Join Date</label>
+            <InputDate class="form-control" @bind-Value="patientModel.JoinDate" disabled />
+            <ValidationMessage For="@(() => patientModel.JoinDate)" class="text-danger small" />
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Status</label>
+            <InputSelect class="form-select" @bind-Value="patientModel.Status">
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+            </InputSelect>
+            <ValidationMessage For="@(() => patientModel.Status)" class="text-danger small" />
+        </div>
+    </div>
+
+    <div class="modal-footer mt-4">
+        <button type="button" class="btn btn-secondary" @onclick="CloseDialog">Cancel</button>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save me-1"></i> Save
+        </button>
+    </div>
+</EditForm>
+
                 </div>
             </div>
         </div>

@@ -1,7 +1,8 @@
 ﻿using Appointment_Management_Blazor.Shared;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace Appointment_Management_Blazor.Data.SeedData
+namespace Appointment_Management_Blazor.EntityFrameworkCore.Data.SeedData
 {
     public static class DbSeeder
     {

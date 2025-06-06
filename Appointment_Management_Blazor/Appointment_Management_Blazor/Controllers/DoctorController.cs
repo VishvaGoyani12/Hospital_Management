@@ -1,8 +1,8 @@
-﻿using Appointment_Management_Blazor.Services.Interfaces;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Appointment_Management_Blazor.Shared.Models;
+using Appointment_Management_Blazor.Interfaces.Interfaces;
 
 namespace Appointment_Management_Blazor.Controllers
 {
@@ -61,13 +61,16 @@ namespace Appointment_Management_Blazor.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(new { success = false, message = "Invalid data" });
+                return BadRequest("Invalid data");
             }
 
             var (success, message) = await _doctorService.UpdateDoctorAsync(model);
-            if (!success) return BadRequest(new { success = false, message });
-            return Ok(new { success = true, message });
+            if (!success)
+                return BadRequest(message); 
+
+            return Ok(message); 
         }
+
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteDoctor(string id)

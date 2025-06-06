@@ -1,6 +1,7 @@
-﻿using Appointment_Management_Blazor.Client.Models.DTOs;
+﻿
 using Appointment_Management_Blazor.Client.Services.Interfaces;
 using Appointment_Management_Blazor.Shared.Models;
+using Appointment_Management_Blazor.Shared.Models.DTOs;
 using Blazored.LocalStorage;
 using System.Net.Http;
 using System.Net.Http.Headers;

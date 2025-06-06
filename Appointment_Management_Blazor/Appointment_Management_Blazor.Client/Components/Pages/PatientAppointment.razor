@@ -139,13 +139,18 @@ else
                                 <input id="patient" class="form-control" readonly value="@currentPatientName" />                           
                             </div>
 
-                            <div class="col-md-6">
-                                <label class="form-label">Appointment Date & Time</label>
-                                <input type="datetime-local" class="form-control"
-                                       value="@appointmentModel.AppointmentDate.ToString("yyyy-MM-ddTHH:mm")"
-                                       @onchange="OnAppointmentDateChanged" />
-                                <ValidationMessage For="@(() => appointmentModel.AppointmentDate)" />
-                            </div>
+                           <div class="col-md-6">
+    <label class="form-label">Appointment Date & Time</label>
+    <input type="datetime-local"
+       class="form-control"
+       @bind-value="appointmentModel.AppointmentDate"
+       @bind-value:event="oninput"
+       min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" />
+<ValidationMessage For="@(() => appointmentModel.AppointmentDate)" />
+
+
+</div>
+
 
                             <div class="col-md-6">
                                 <label class="form-label">Doctor</label>

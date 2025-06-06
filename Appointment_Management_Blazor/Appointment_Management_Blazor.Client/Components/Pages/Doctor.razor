@@ -128,63 +128,78 @@ else
                 </div>
                 <div class="modal-body">
                     <EditForm Model="@doctorModel" OnValidSubmit="HandleValidSubmit">
-                        <DataAnnotationsValidator />
-                         <ValidationSummary class="text-danger mb-3" />
+    <DataAnnotationsValidator />
 
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Full Name</label>
-                                <InputText class="form-control" @bind-Value="doctorModel.FullName" />
-                            </div>                           
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Full Name</label>
+            <InputText class="form-control" @bind-Value="doctorModel.FullName" />
+            <ValidationMessage For="@(() => doctorModel.FullName)" class="text-danger" />
+        </div>
 
-                            <div class="col-md-6">
-                                <label class="form-label">Gender</label>
-                                <InputSelect class="form-select" @bind-Value="doctorModel.Gender">
-                                    <option value="">Select Gender</option>
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                    <option value="Other">Other</option>
-                                </InputSelect>
-                            </div>
+        <div class="col-md-6">
+            <label class="form-label">Gender</label>
+            <InputSelect class="form-select" @bind-Value="doctorModel.Gender">
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </InputSelect>
+            <ValidationMessage For="@(() => doctorModel.Gender)" class="text-danger" />
+        </div>
 
-                            <div class="col-md-6">
-                                <label class="form-label">Specialization</label>
-                                <InputText class="form-control" @bind-Value="doctorModel.SpecialistIn" />
-                            </div>
+        <div class="col-md-6">
+            <label class="form-label">Specialization</label>
+            <InputText class="form-control" @bind-Value="doctorModel.SpecialistIn" />
+            <ValidationMessage For="@(() => doctorModel.SpecialistIn)" class="text-danger" />
+        </div>
 
-                            <div class="col-md-6">
-                                <label class="form-label">Status</label>
-                                <InputSelect class="form-select" @bind-Value="doctorModel.Status">
-                                    <option value="true">Active</option>
-                                    <option value="false">Inactive</option>
-                                </InputSelect>
-                            </div>
+        <div class="col-md-6">
+            <label class="form-label">Status</label>
+            <InputSelect class="form-select" @bind-Value="doctorModel.Status">
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+            </InputSelect>
+            <ValidationMessage For="@(() => doctorModel.Status)" class="text-danger" />
+        </div>
 
-                            @if (string.IsNullOrEmpty(selectedDoctorId))
-                            {
-                                <div class="col-md-6">
-                                    <label class="form-label">Email</label>
-                                    <InputText class="form-control" @bind-Value="doctorModel.Email"/>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Password</label>
-                                    <InputText type="password" class="form-control" @bind-Value="doctorModel.Password" />
-                                </div>
+        @if (string.IsNullOrEmpty(selectedDoctorId))
+{
+    <div class="col-md-6">
+        <label class="form-label">Email</label>
+        <InputText class="form-control" @bind-Value="doctorModel.Email"/>
+        <ValidationMessage For="@(() => doctorModel.Email)" class="text-danger" />
+    </div>
 
-                                <div class="col-md-6">
-                                    <label class="form-label">Confirm Password</label>
-                                    <InputText type="password" class="form-control" @bind-Value="doctorModel.ConfirmPassword" />
-                                </div>
-                            }
-                        </div>
+    <div class="col-md-6">
+        <label class="form-label">Password</label>
+        <InputText type="password" class="form-control" @bind-Value="doctorModel.Password" />
+        <ValidationMessage For="@(() => doctorModel.Password)" class="text-danger" />
+    </div>
 
-                        <div class="modal-footer mt-4">
-                            <button type="button" class="btn btn-secondary" @onclick="CloseDialog">Cancel</button>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-save me-1"></i> Save
-                            </button>
-                        </div>
-                    </EditForm>
+    <div class="col-md-6">
+        <label class="form-label">Confirm Password</label>
+        <InputText type="password" class="form-control" @bind-Value="doctorModel.ConfirmPassword" />
+        <ValidationMessage For="@(() => doctorModel.ConfirmPassword)" class="text-danger" />
+    </div>
+}
+else
+{
+    <div class="col-md-6">
+        <label class="form-label">Email</label>
+        <InputText class="form-control" @bind-Value="doctorModel.Email" disabled />
+    </div>
+}
+    </div>
+
+    <div class="modal-footer mt-4">
+        <button type="button" class="btn btn-secondary" @onclick="CloseDialog">Cancel</button>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save me-1"></i> Save
+        </button>
+    </div>
+</EditForm>
+
                 </div>
             </div>
         </div>
@@ -366,25 +381,25 @@ else
     }
 
     private async Task EditDoctor(string id)
-    {
-        if (string.IsNullOrEmpty(id)) return;
+{
+    if (string.IsNullOrEmpty(id)) return;
 
-        var doctor = await DoctorService.GetDoctorByIdAsync(id);
-        if (doctor != null)
+    var doctor = await DoctorService.GetDoctorByIdAsync(id);
+    if (doctor != null)
+    {
+        doctorModel = new DoctorViewModel
         {
-            doctorModel = new DoctorViewModel
-            {
-                ApplicationUserId = id,
-                FullName = doctor.FullName,
-                Email = doctor.Email,
-                Gender = doctor.Gender,
-                SpecialistIn = doctor.SpecialistIn,
-                Status = doctor.Status
-            };
-            selectedDoctorId = id;
-            showDialog = true;
-        }
+            ApplicationUserId = id,
+            FullName = doctor.FullName,
+            Email = doctor.Email,  
+            Gender = doctor.Gender,
+            SpecialistIn = doctor.SpecialistIn,
+            Status = doctor.Status,           
+        };
+        selectedDoctorId = id;
+        showDialog = true;
     }
+}
 
     private async Task DeleteDoctor(string id)
 {
@@ -407,35 +422,44 @@ else
 }
 
     private async Task HandleValidSubmit()
+{
+    try
     {
-        try
+        ApiResponse result;
+        if (string.IsNullOrEmpty(selectedDoctorId))
         {
-            ApiResponse result;
-            if (string.IsNullOrEmpty(selectedDoctorId))
+            // For create,  all fields
+            if (string.IsNullOrEmpty(doctorModel.Email) || 
+                string.IsNullOrEmpty(doctorModel.Password) ||
+                string.IsNullOrEmpty(doctorModel.ConfirmPassword))
             {
-                result = await DoctorService.CreateDoctorAsync(doctorModel);
+                await JSRuntime.InvokeVoidAsync("alert", "Email, Password and Confirm Password are required when creating a new doctor");
+                return;
             }
-            else
-            {
-                result = await DoctorService.UpdateDoctorAsync(doctorModel);
-            }
-
-            if (result.Success)
-            {
-                showDialog = false;
-                await LoadDoctors();
-                await JSRuntime.InvokeVoidAsync("alert", result.Message ?? "Operation completed successfully");
-            }
-            else
-            {
-                await JSRuntime.InvokeVoidAsync("alert", result.Message ?? "Operation failed");
-            }
+            
+            result = await DoctorService.CreateDoctorAsync(doctorModel);
         }
-        catch (Exception ex)
+        else
         {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
+            result = await DoctorService.UpdateDoctorAsync(doctorModel);
+        }
+
+        if (result.Success)
+        {
+            showDialog = false;
+            await LoadDoctors();
+            await JSRuntime.InvokeVoidAsync("alert", result.Message ?? "Operation completed successfully");
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", result.Message ?? "Operation failed");
         }
     }
+    catch (Exception ex)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
+    }
+}
 
     private void CloseDialog()
     {

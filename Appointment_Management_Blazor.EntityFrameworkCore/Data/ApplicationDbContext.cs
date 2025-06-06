@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Reflection.Emit;
 
-namespace Appointment_Management_Blazor.Data
+namespace Appointment_Management_Blazor.EntityFrameworkCore.Data
 {
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {

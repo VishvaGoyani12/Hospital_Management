@@ -9,6 +9,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Appointment_Management_Blaz
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Appointment_Management_Blazor.Shared", "Appointment_Management_Blazor\Appointment_Management_Blazor.Shared\Appointment_Management_Blazor.Shared.csproj", "{D642B9C7-DE40-4D28-8B70-B7461D40A4AB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Appointment_Management_Blazor.Interfaces", "Appointment_Management_Blazor.Interfaces\Appointment_Management_Blazor.Interfaces.csproj", "{8C2F8203-7308-4623-BD36-15C574FAEFF5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Appointment_Management_Blazor.Repository", "Appointment_Management_Blazor.Repository\Appointment_Management_Blazor.Repository.csproj", "{7A7555B3-62D2-4B93-A334-F74CF3153B04}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Appointment_Management_Blazor.EntityFrameworkCore", "Appointment_Management_Blazor.EntityFrameworkCore\Appointment_Management_Blazor.EntityFrameworkCore.csproj", "{772177F4-3A47-48BF-84E8-536111CF6038}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +33,18 @@ Global
 		{D642B9C7-DE40-4D28-8B70-B7461D40A4AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D642B9C7-DE40-4D28-8B70-B7461D40A4AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D642B9C7-DE40-4D28-8B70-B7461D40A4AB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C2F8203-7308-4623-BD36-15C574FAEFF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C2F8203-7308-4623-BD36-15C574FAEFF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C2F8203-7308-4623-BD36-15C574FAEFF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C2F8203-7308-4623-BD36-15C574FAEFF5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7A7555B3-62D2-4B93-A334-F74CF3153B04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A7555B3-62D2-4B93-A334-F74CF3153B04}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A7555B3-62D2-4B93-A334-F74CF3153B04}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A7555B3-62D2-4B93-A334-F74CF3153B04}.Release|Any CPU.Build.0 = Release|Any CPU
+		{772177F4-3A47-48BF-84E8-536111CF6038}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{772177F4-3A47-48BF-84E8-536111CF6038}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{772177F4-3A47-48BF-84E8-536111CF6038}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{772177F4-3A47-48BF-84E8-536111CF6038}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

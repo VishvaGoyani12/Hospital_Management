@@ -10,18 +10,19 @@
     <div class="card-body p-4">
         <EditForm EditContext="@editContext" OnValidSubmit="HandleRegister">
             <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger mb-3" />
 
             <div class="mb-3">
                 <label class="form-label">Full Name</label>
                 <InputText @bind-Value="model.FullName" class="form-control" placeholder="John Doe"
                            @oninput="() => ClearValidationFor(() => model.FullName)" />
+                <ValidationMessage For="@(() => model.FullName)" class="text-danger" />
             </div>
 
             <div class="mb-3">
                 <label class="form-label">Email</label>
                 <InputText @bind-Value="model.Email" class="form-control" placeholder="example@mail.com"
                            @oninput="() => ClearValidationFor(() => model.Email)" />
+                <ValidationMessage For="@(() => model.Email)" class="text-danger" />
             </div>
 
             <div class="mb-3">
@@ -32,23 +33,27 @@
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                 </InputSelect>
+                <ValidationMessage For="@(() => model.Gender)" class="text-danger" />
             </div>
 
             <div class="mb-3">
                 <label class="form-label">Join Date</label>
                 <InputDate @bind-Value="model.JoinDate" class="form-control" disabled />
+                <ValidationMessage For="@(() => model.JoinDate)" class="text-danger" />
             </div>
 
             <div class="mb-3">
                 <label class="form-label">Password</label>
                 <InputText @bind-Value="model.Password" type="password" class="form-control"
                            @oninput="() => ClearValidationFor(() => model.Password)" />
+                <ValidationMessage For="@(() => model.Password)" class="text-danger" />
             </div>
 
             <div class="mb-4">
                 <label class="form-label">Confirm Password</label>
                 <InputText @bind-Value="model.ConfirmPassword" type="password" class="form-control"
                            @oninput="() => ClearValidationFor(() => model.ConfirmPassword)" />
+                <ValidationMessage For="@(() => model.ConfirmPassword)" class="text-danger" />
             </div>
 
             <div class="d-grid">
@@ -65,6 +70,7 @@
                 </button>
             </div>
         </EditForm>
+
 
         @if (!string.IsNullOrEmpty(responseMessage))
         {

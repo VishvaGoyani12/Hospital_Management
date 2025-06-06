@@ -41,7 +41,7 @@ namespace Appointment_Management_Blazor.Services.Implementations
             _logger = logger;
         }
 
-        public async Task<AuthResponse> RegisterAsync(RegisterViewModel model)
+        public async Task<AuthResponse> RegisterAsync(RegisterViewModel model, string? profileImagePath)
         {
             try
             {
@@ -60,10 +60,7 @@ namespace Appointment_Management_Blazor.Services.Implementations
 
                 var result = await _userManager.CreateAsync(user, model.Password);
                 if (!result.Succeeded)
-                {
-                    var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                    return new AuthResponse { IsSuccess = false, Message = errors };
-                }
+                    return new AuthResponse { IsSuccess = false, Message = string.Join(", ", result.Errors.Select(e => e.Description)) };
 
                 await _userManager.AddToRoleAsync(user, "Patient");
 
@@ -71,22 +68,19 @@ namespace Appointment_Management_Blazor.Services.Implementations
                 {
                     ApplicationUserId = user.Id,
                     JoinDate = model.JoinDate,
-                    Status = true
+                    Status = true,
+                    ProfileImagePath = profileImagePath
                 };
 
                 _context.Patients.Add(patient);
                 await _context.SaveChangesAsync();
 
                 var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-
                 var confirmationUrl = $"{_configuration["ClientUrl"]}/api/account/confirm-email?userId={user.Id}&token={HttpUtility.UrlEncode(token)}";
-                
-                await _emailSender.SendEmailAsync(user.Email, "Confirm your email",
-$@"Please confirm your email by clicking the link below:<br/><br/>
-<a href='{confirmationUrl}'>Click to confirm your email</a><br/><br/>
-If the above link doesn't work, copy and paste this into your browser:<br/>
-{confirmationUrl}");
 
+                await _emailSender.SendEmailAsync(user.Email, "Confirm your email",
+        $@"Please confirm your email by clicking the link below:<br/><br/>
+<a href='{confirmationUrl}'>Click to confirm your email</a>");
 
                 return new AuthResponse { IsSuccess = true, Message = "Registration successful! Please check your email to confirm your account." };
             }
@@ -99,6 +93,8 @@ If the above link doesn't work, copy and paste this into your browser:<br/>
                 };
             }
         }
+
+
 
         public async Task<AuthResponse> LoginAsync(LoginViewModel model)
         {

@@ -5,7 +5,7 @@ namespace Appointment_Management_Blazor.Interfaces.Interfaces
 {
     public interface IAccountService
     {
-        Task<AuthResponse> RegisterAsync(RegisterViewModel model);
+        Task<AuthResponse> RegisterAsync(RegisterViewModel model, string? profileImagePath);
         Task<AuthResponse> LoginAsync(LoginViewModel model);
         Task<AuthResponse> ConfirmEmailAsync(string userId, string token);
         Task<AuthResponse> ForgotPasswordAsync(string email);

@@ -17,49 +17,58 @@ namespace Appointment_Management_Blazor.Controllers
         private readonly IAccountService _accountService;
         private readonly ILogger<AccountController> _logger;
         private readonly IConfiguration _configuration;
+        private readonly IWebHostEnvironment _env;
 
-        public AccountController(IAccountService accountService, ILogger<AccountController> logger, IConfiguration configuration)
+        public AccountController(IAccountService accountService, ILogger<AccountController> logger, IConfiguration configuration, IWebHostEnvironment env)
         {
             _accountService = accountService;
             _logger = logger;
             _configuration = configuration;
+            _env = env;
         }
 
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterViewModel model)
+        public async Task<IActionResult> Register([FromForm] RegisterViewModel model)
         {
             try
             {
                 _logger.LogInformation("Registration attempt for: {Email}", model?.Email);
 
                 if (model == null)
-                {
-                    _logger.LogWarning("Null model received");
                     return BadRequest(new { Message = "Request body cannot be null" });
-                }
 
                 var validationResults = new List<ValidationResult>();
                 var validationContext = new ValidationContext(model);
                 if (!Validator.TryValidateObject(model, validationContext, validationResults, true))
-                {
-                    _logger.LogWarning("Validation failed: {Errors}", validationResults);
                     return BadRequest(new
                     {
                         Message = "Validation failed",
                         Errors = validationResults.Select(v => v.ErrorMessage)
                     });
-                }
 
-                var result = await _accountService.RegisterAsync(model);
-
-                if (!result.IsSuccess)
+                // Handle image upload
+                string? imagePath = null;
+                if (model.ProfileImage != null && model.ProfileImage.Length > 0)
                 {
-                    _logger.LogWarning("Registration failed: {Message}", result.Message);
-                    return BadRequest(result);
+                    var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads/patients");
+                    Directory.CreateDirectory(uploadsFolder);
+
+                    var fileName = $"{Guid.NewGuid()}{Path.GetExtension(model.ProfileImage.FileName)}";
+                    var filePath = Path.Combine(uploadsFolder, fileName);
+
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await model.ProfileImage.CopyToAsync(fileStream);
+                    }
+
+                    imagePath = $"/uploads/patients/{fileName}";
                 }
 
-                _logger.LogInformation("Registration successful for: {Email}", model.Email);
+                var result = await _accountService.RegisterAsync(model, imagePath);
+                if (!result.IsSuccess)
+                    return BadRequest(result);
+
                 return Ok(result);
             }
             catch (Exception ex)
@@ -72,6 +81,8 @@ namespace Appointment_Management_Blazor.Controllers
                 });
             }
         }
+
+
 
 
         [HttpPost("login")]

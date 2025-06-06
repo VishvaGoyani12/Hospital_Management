@@ -7,5 +7,6 @@
         public string Gender { get; set; }
         public DateTime? JoinDate { get; set; }
         public bool Status { get; set; }
+        public string ProfileImagePath { get; set; } // Add this property
     }
 }

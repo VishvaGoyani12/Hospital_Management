@@ -2,12 +2,13 @@
 
 using Appointment_Management_Blazor.Shared.HelperModel;
 using Appointment_Management_Blazor.Shared.Models;
+using Appointment_Management_Blazor.Shared.Models.DTOs;
 
 namespace Appointment_Management_Blazor.Client.Services.Interfaces
 {
     public interface IAccountClientService
     {
-        Task<AuthResponse> RegisterAsync(RegisterViewModel model);
+        Task<AuthResponse> RegisterAsync(ClientRegisterModel model);
         Task<AuthResponse> LoginAsync(LoginViewModel model);
         Task<AuthResponse> ConfirmEmailAsync(string userId, string token);
         Task<AuthResponse> ForgotPasswordAsync(string email);

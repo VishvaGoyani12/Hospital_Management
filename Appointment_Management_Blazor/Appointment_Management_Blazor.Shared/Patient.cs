@@ -20,6 +20,8 @@ namespace Appointment_Management_Blazor.Shared
 
         public DateTime? JoinDate { get; set; }
         public bool Status { get; set; }
+
+        public string? ProfileImagePath { get; set; }
         public ICollection<Appointment>? Appointments { get; set; }
     }
 }

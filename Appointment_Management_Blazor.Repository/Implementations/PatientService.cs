@@ -23,7 +23,7 @@ namespace Appointment_Management_Blazor.Services.Implementations
         {
             var query = _context.Patients.Include(p => p.ApplicationUser).AsQueryable();
 
-            // Search
+            // Search (existing code remains the same)
             if (!string.IsNullOrEmpty(filter.SearchValue))
             {
                 query = query.Where(p =>
@@ -34,7 +34,7 @@ namespace Appointment_Management_Blazor.Services.Implementations
                 );
             }
 
-            // Filters
+            // Filters (existing code remains the same)
             if (!string.IsNullOrEmpty(filter.Gender))
                 query = query.Where(p => p.ApplicationUser.Gender == filter.Gender);
 
@@ -43,9 +43,10 @@ namespace Appointment_Management_Blazor.Services.Implementations
 
             if (filter.JoinDate.HasValue)
                 query = query.Where(p => EF.Functions.DateDiffDay(p.JoinDate, filter.JoinDate.Value) == 0);
+
             var recordsTotal = await query.CountAsync();
 
-            // Sorting
+            // Sorting (existing code remains the same)
             if (!string.IsNullOrEmpty(filter.SortColumn) && !string.IsNullOrEmpty(filter.SortDirection))
             {
                 if (filter.SortColumn == "name") filter.SortColumn = "ApplicationUser.FullName";
@@ -54,35 +55,34 @@ namespace Appointment_Management_Blazor.Services.Implementations
                 query = query.OrderBy($"{filter.SortColumn} {filter.SortDirection}");
             }
 
-            var data = query.Skip(filter.Start).Take(filter.Length)
-    .Select(p => new
-    {
-        p.Id,
-        FullName = p.ApplicationUser.FullName, 
-        Gender = p.ApplicationUser.Gender,
-        p.JoinDate,
-        Status = p.Status
-    })
-
-    .AsEnumerable()
-    .Select(p => new
-    {
-        p.Id,
-        p.FullName,
-        p.Gender,
-        JoinDate = p.JoinDate?.ToString("yyyy-MM-dd"),
-        p.Status 
-    })
-    .ToList();
-
-
+            var data = await query.Skip(filter.Start).Take(filter.Length)
+                .Select(p => new
+                {
+                    p.Id,
+                    FullName = p.ApplicationUser.FullName,
+                    Gender = p.ApplicationUser.Gender,
+                    p.JoinDate,
+                    p.Status,
+                    p.ProfileImagePath
+                })
+                .ToListAsync();
 
             return new
             {
                 draw = filter.Draw,
                 recordsFiltered = recordsTotal,
                 recordsTotal,
-                data
+                data = data.Select(p => new
+                {
+                    p.Id,
+                    p.FullName,
+                    p.Gender,
+                    JoinDate = p.JoinDate?.ToString("yyyy-MM-dd"),
+                    p.Status,
+                    ProfileImagePath = p.ProfileImagePath != null ?
+                        $"/{p.ProfileImagePath.Replace("\\", "/")}" :
+                        "/images/default-profile.png"
+                })
             };
         }
 
@@ -100,7 +100,8 @@ namespace Appointment_Management_Blazor.Services.Implementations
                 FullName = patient.ApplicationUser?.FullName ?? "",
                 Gender = patient.ApplicationUser?.Gender ?? "",
                 JoinDate = patient.JoinDate,
-                Status = patient.Status
+                Status = patient.Status,
+                ProfileImagePath = patient.ProfileImagePath 
             };
         }
 

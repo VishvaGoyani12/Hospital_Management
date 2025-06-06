@@ -44,7 +44,6 @@ namespace Appointment_Management_Blazor.Client.Helper
 
             if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
             {
-                // Redirect to Access Denied page
                 _navigation.NavigateTo("/access-denied");
             }
 

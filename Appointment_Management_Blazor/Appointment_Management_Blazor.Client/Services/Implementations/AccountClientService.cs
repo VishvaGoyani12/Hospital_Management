@@ -2,6 +2,7 @@
 using Appointment_Management_Blazor.Client.Services.Interfaces;
 using Appointment_Management_Blazor.Shared.HelperModel;
 using Appointment_Management_Blazor.Shared.Models;
+using Appointment_Management_Blazor.Shared.Models.DTOs;
 using Blazored.LocalStorage;
 using System.Net;
 using System.Net.Http.Headers;
@@ -31,35 +32,41 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
             }
         }
 
-        public async Task<AuthResponse> RegisterAsync(RegisterViewModel model)
+        public async Task<AuthResponse> RegisterAsync(ClientRegisterModel model)
         {
             try
             {
-                Console.WriteLine($"Sending registration request for: {model.Email}");
-                var modelJson = JsonSerializer.Serialize(model);
-                Console.WriteLine($"Request payload: {modelJson}");
+                var formData = new MultipartFormDataContent();
 
-                var response = await _httpClient.PostAsJsonAsync("api/account/register", model);
+                formData.Add(new StringContent(model.FullName ?? ""), "FullName");
+                formData.Add(new StringContent(model.Email ?? ""), "Email");
+                formData.Add(new StringContent(model.Gender ?? ""), "Gender");
+                formData.Add(new StringContent(model.JoinDate.ToString("yyyy-MM-dd")), "JoinDate");
+                formData.Add(new StringContent(model.Password ?? ""), "Password");
+                formData.Add(new StringContent(model.ConfirmPassword ?? ""), "ConfirmPassword");
 
-                if (!response.IsSuccessStatusCode)
+                if (model.ProfileImage != null)
+                {
+                    var stream = model.ProfileImage.OpenReadStream(1024 * 1024 * 5); 
+                    var fileContent = new StreamContent(stream);
+                    fileContent.Headers.ContentType = new MediaTypeHeaderValue(model.ProfileImage.ContentType);
+
+                    formData.Add(fileContent, "ProfileImage", model.ProfileImage.Name);
+                }
+
+                var response = await _httpClient.PostAsync("api/account/register", formData);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<AuthResponse>() ?? new AuthResponse
+                    {
+                        IsSuccess = false,
+                        Message = "Empty response from server"
+                    };
+                }
+                else
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"Error response content: {content}");
-
-                    if (response.Content.Headers.ContentType?.MediaType == "application/problem+json")
-                    {
-                          using var jsonDoc = JsonDocument.Parse(content);
-                            var problemDetails = jsonDoc.RootElement;
-
-                        if (problemDetails.TryGetProperty("title", out var title) ||
-                            problemDetails.TryGetProperty("detail", out var detail))
-                        {
-                            return new AuthResponse
-                            {
-                                IsSuccess = false,
-                            };
-                        }
-                    }
 
                     return new AuthResponse
                     {
@@ -67,20 +74,13 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
                         Message = content ?? $"Registration failed with status: {response.StatusCode}"
                     };
                 }
-
-                return await response.Content.ReadFromJsonAsync<AuthResponse>() ?? new AuthResponse
-                {
-                    IsSuccess = false,
-                    Message = "Received empty response from server"
-                };
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Exception during registration: {ex}");
                 return new AuthResponse
                 {
                     IsSuccess = false,
-                    Message = $"Registration error: {ex.Message}"
+                    Message = $"Client error during registration: {ex.Message}"
                 };
             }
         }

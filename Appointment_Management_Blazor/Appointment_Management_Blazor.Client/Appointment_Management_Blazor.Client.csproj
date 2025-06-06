@@ -17,4 +17,8 @@
     <ProjectReference Include="..\Appointment_Management_Blazor.Shared\Appointment_Management_Blazor.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\Uploads\Patient\" />
+  </ItemGroup>
+
 </Project>

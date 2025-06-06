@@ -54,7 +54,21 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
 
                 if (response.IsSuccessStatusCode)
                 {
-                    return await response.Content.ReadFromJsonAsync<PatientListResponse>();
+                    var result = await response.Content.ReadFromJsonAsync<PatientListResponse>();
+
+                    // Ensure ProfileImage URLs are properly formatted
+                    if (result?.Data != null)
+                    {
+                        foreach (var patient in result.Data)
+                        {
+                            if (!string.IsNullOrEmpty(patient.ProfileImagePath) && !patient.ProfileImagePath.StartsWith("http"))
+                            {
+                                patient.ProfileImagePath = $"{_httpClient.BaseAddress}{patient.ProfileImagePath.TrimStart('/')}";
+                            }
+                        }
+                    }
+
+                    return result ?? new PatientListResponse();
                 }
 
                 return new PatientListResponse

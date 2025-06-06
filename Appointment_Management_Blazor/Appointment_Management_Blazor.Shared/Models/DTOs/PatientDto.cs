@@ -7,6 +7,7 @@
         public string Gender { get; set; }
         public string JoinDate { get; set; }
         public bool Status { get; set; }
+        public string ProfileImagePath { get; set; } 
         public string StatusDisplay => Status ? "Active" : "Inactive";
     }
 

@@ -31,6 +31,19 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
             }
         }
 
+        public async Task<DataStatsDto> GetPatientStatsAsync()
+        {
+            try
+            {
+                await AddJwtTokenAsync();
+                return await _httpClient.GetFromJsonAsync<DataStatsDto>("api/patient/stats");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching doctor stats: {ex.Message}");
+                return new DataStatsDto();
+            }
+        }
         public async Task<PatientListResponse> GetAllPatientsAsync(PatientFilterModel filters)
         {
             try

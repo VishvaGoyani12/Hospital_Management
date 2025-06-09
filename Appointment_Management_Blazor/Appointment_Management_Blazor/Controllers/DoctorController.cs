@@ -18,6 +18,13 @@ namespace Appointment_Management_Blazor.Controllers
             _doctorService = doctorService;
         }
 
+        [HttpGet("stats")]
+        public async Task<IActionResult> GetDoctorStats()
+        {
+            var result = await _doctorService.GetDoctorStatsAsync();
+            return Ok(result);
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetAllDoctors([FromQuery] DoctorFilterModel filters)
         {

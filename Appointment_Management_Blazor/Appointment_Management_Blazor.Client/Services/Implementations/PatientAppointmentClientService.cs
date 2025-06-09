@@ -30,6 +30,17 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
             }
         }
 
+        public async Task<AppointmentStatsDto?> GetAppointmentStatsAsync()
+        {
+            await AddJwtTokenAsync();
+
+            var response = await _httpClient.GetAsync("api/PatientAppointment/stats");
+            if (!response.IsSuccessStatusCode) return null;
+
+            var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<AppointmentStatsDto>>();
+            return apiResponse?.Data;
+        }
+
         public async Task<AppointmentListResponse> GetAllAppointmentsAsync(AppointmentFilterModel filters)
         {
             await AddJwtTokenAsync();

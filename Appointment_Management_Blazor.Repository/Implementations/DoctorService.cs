@@ -27,6 +27,19 @@ namespace Appointment_Management_Blazor.Repository.Implementations
             _roleManager = roleManager;
             _env = env;
         }
+        public async Task<DataStatsDto> GetDoctorStatsAsync()
+        {
+            var total = await _context.Doctors.CountAsync();
+            var active = await _context.Doctors.CountAsync(d => d.Status);
+            var inactive = await _context.Doctors.CountAsync(d => !d.Status);
+
+            return new DataStatsDto
+            {
+                TotalData = total,
+                ActiveData = active,
+                InactiveData = inactive
+            };
+        }
 
         public async Task<DoctorListResponse> GetAllDoctorsAsync(DoctorFilterModel filters)
         {

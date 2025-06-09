@@ -27,6 +27,20 @@ public class DoctorClientService : IDoctorClientService
         }
     }
 
+    public async Task<DataStatsDto> GetDoctorStatsAsync()
+    {
+        try
+        {
+            await AddJwtTokenAsync();
+            return await _httpClient.GetFromJsonAsync<DataStatsDto>("api/doctor/stats");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching doctor stats: {ex.Message}");
+            return new DataStatsDto();
+        }
+    }
+
     public async Task<DoctorListResponse> GetAllDoctorsAsync(DoctorFilterModel filters)
     {
         try

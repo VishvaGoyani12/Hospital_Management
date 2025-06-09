@@ -25,6 +25,14 @@ namespace Appointment_Management_Blazor.Shared.Models.DTOs
         public string Status { get; set; }
     }
 
+    public class AppointmentStatsDto
+    {
+        public int TotalAppointments { get; set; }
+        public int PendingAppointments { get; set; }
+        public int ConfirmedAppointments { get; set; }
+        public int CancelledAppointments { get; set; }
+    }
+
     public class DoctorDropdownDto
     {
         public int Id { get; set; }

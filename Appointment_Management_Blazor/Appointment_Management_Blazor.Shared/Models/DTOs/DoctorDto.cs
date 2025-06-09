@@ -32,6 +32,13 @@ namespace Appointment_Management_Blazor.Shared.Models.DTOs
         public string? ProfileImagePath { get; set; } 
     }
 
+    public class DataStatsDto
+    {
+        public int TotalData { get; set; }
+        public int ActiveData { get; set; }
+        public int InactiveData { get; set; }
+    }
+
     public class DoctorListResponse
     {
         public int Draw { get; set; }

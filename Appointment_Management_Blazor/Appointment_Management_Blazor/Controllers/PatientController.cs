@@ -1,4 +1,5 @@
 ﻿using Appointment_Management_Blazor.Interfaces.Interfaces;
+using Appointment_Management_Blazor.Repository.Implementations;
 using Appointment_Management_Blazor.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -18,13 +19,19 @@ namespace Appointment_Management_Blazor.Controllers
             _patientService = patientService;
         }
 
+        [HttpGet("stats")]
+        public async Task<IActionResult> GetPatientStats()
+        {
+            var result = await _patientService.GetPatientStatsAsync();
+            return Ok(result);
+        }
+
         [HttpGet("GetAll")]
         public async Task<IActionResult> GetAll([FromQuery] PatientFilterModel filter)
         {
             var result = await _patientService.GetAllPatientsAsync(filter);
             return Ok(result);
         }
-
 
 
         [HttpGet("Edit/{id}")]

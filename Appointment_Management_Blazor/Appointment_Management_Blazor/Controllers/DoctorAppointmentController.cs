@@ -25,6 +25,36 @@ namespace Appointment_Management_Blazor.Controllers
             _userManager = userManager;
         }
 
+        [HttpGet("stats")]
+        public async Task<IActionResult> GetStats()
+        {
+            try
+            {
+                var email = User.FindFirstValue(ClaimTypes.Email);
+                if (string.IsNullOrEmpty(email)) return Unauthorized();
+
+                var user = await _userManager.FindByEmailAsync(email);
+                if (user == null) return Unauthorized();
+
+                var doctorId = await _appointmentService.GetDoctorIdByUserId(user.Id);
+                var stats = await _appointmentService.GetAppointmentStatsAsync(doctorId);
+
+                return Ok(new ApiResponse<AppointmentStatsDto>
+                {
+                    Success = true,
+                    Data = stats
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ApiResponse
+                {
+                    Success = false,
+                    Message = $"Internal server error: {ex.Message}"
+                });
+            }
+        }
+
         [HttpPost("list")]
         public async Task<IActionResult> GetAll([FromBody] AppointmentFilterModel filters)
         {

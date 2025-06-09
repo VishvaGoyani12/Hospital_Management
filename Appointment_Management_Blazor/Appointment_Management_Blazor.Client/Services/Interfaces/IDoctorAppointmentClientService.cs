@@ -7,6 +7,7 @@ namespace Appointment_Management_Blazor.Client.Services.Interfaces
 {
     public interface IDoctorAppointmentClientService
     {
+        Task<AppointmentStatsDto?> GetAppointmentStatsAsync();
         Task<AppointmentListResponse> GetAllAppointmentsAsync(AppointmentFilterModel filter);
         Task<AppointmentViewModel?> GetAppointmentByIdAsync(int id);
         Task<bool> UpdateAppointmentStatusAsync(UpdateStatusModel model);

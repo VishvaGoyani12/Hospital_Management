@@ -23,6 +23,24 @@ namespace Appointment_Management_Blazor.Repository.Implementations
             _userManager = userManager;
         }
 
+        public async Task<AppointmentStatsDto> GetAppointmentStatsAsync(int? doctorId = null)
+        {
+            var query = _context.Appointments.AsQueryable();
+
+            if (doctorId.HasValue)
+            {
+                query = query.Where(a => a.DoctorId == doctorId.Value);
+            }
+
+            return new AppointmentStatsDto
+            {
+                TotalAppointments = await query.CountAsync(),
+                PendingAppointments = await query.CountAsync(a => a.Status == "Pending"),
+                ConfirmedAppointments = await query.CountAsync(a => a.Status == "Confirmed"),
+                CancelledAppointments = await query.CountAsync(a => a.Status == "Cancelled")
+            };
+        }
+
         public async Task<AppointmentListResponse> GetAllAppointmentsAsync(AppointmentFilterModel filters)
         {
             try

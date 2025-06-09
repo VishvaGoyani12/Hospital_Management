@@ -6,6 +6,7 @@ namespace Appointment_Management_Blazor.Client.Services.Interfaces
 {
     public interface IPatientAppointmentClientService
     {
+        Task<AppointmentStatsDto?> GetAppointmentStatsAsync();
         Task<AppointmentListResponse> GetAllAppointmentsAsync(AppointmentFilterModel filters);
         Task<AppointmentViewModel> GetAppointmentByIdAsync(int id);
         Task<ApiResponse> CreateAppointmentAsync(AppointmentViewModel model);

@@ -2,6 +2,7 @@
 using Appointment_Management_Blazor.Interfaces.Interfaces;
 using Appointment_Management_Blazor.Shared;
 using Appointment_Management_Blazor.Shared.Models;
+using Appointment_Management_Blazor.Shared.Models.DTOs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,24 @@ namespace Appointment_Management_Blazor.Repository.Implementations
         {
             _context = context;
             _userManager = userManager;
+        }
+
+        public async Task<AppointmentStatsDto> GetAppointmentStatsAsync(int? patientId = null)
+        {
+            var query = _context.Appointments.AsQueryable();
+
+            if (patientId.HasValue)
+            {
+                query = query.Where(a => a.PatientId == patientId.Value);
+            }
+
+            return new AppointmentStatsDto
+            {
+                TotalAppointments = await query.CountAsync(),
+                PendingAppointments = await query.CountAsync(a => a.Status == "Pending"),
+                ConfirmedAppointments = await query.CountAsync(a => a.Status == "Confirmed"),
+                CancelledAppointments = await query.CountAsync(a => a.Status == "Cancelled")
+            };
         }
 
         public async Task<(int TotalCount, List<AppointmentViewModel> Data)> GetAllAppointmentsAsync(AppointmentFilterModel filters)
@@ -318,7 +337,6 @@ namespace Appointment_Management_Blazor.Repository.Implementations
             }
             catch (Exception ex)
             {
-                // Log error here
                 throw;
             }
         }

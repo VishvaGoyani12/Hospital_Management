@@ -2,6 +2,7 @@
 using Appointment_Management_Blazor.EntityFrameworkCore.Data;
 using Appointment_Management_Blazor.Interfaces.Interfaces;
 using Appointment_Management_Blazor.Shared.Models;
+using Appointment_Management_Blazor.Shared.Models.DTOs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,20 @@ namespace Appointment_Management_Blazor.Services.Implementations
         public PatientService(ApplicationDbContext context)
         {
             _context = context;
+        }
+
+        public async Task<DataStatsDto> GetPatientStatsAsync()
+        {
+            var total = await _context.Patients.CountAsync();
+            var active = await _context.Patients.CountAsync(d => d.Status);
+            var inactive = await _context.Patients.CountAsync(d => !d.Status);
+
+            return new DataStatsDto
+            {
+                TotalData = total,
+                ActiveData = active,
+                InactiveData = inactive
+            };
         }
 
         public async Task<object> GetAllPatientsAsync(PatientFilterModel filter)

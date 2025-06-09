@@ -13,5 +13,6 @@ namespace Appointment_Management_Blazor.Interfaces.Interfaces
         Task<AuthResponse> ChangePasswordAsync(string userId, ChangePasswordViewModel model);
         Task<ProfileResponse> GetProfileAsync(string userId);
         Task<AuthResponse> UpdateProfileAsync(string userId, UpdateProfileViewModel model);
+        Task<AuthResponse> UpdateProfileImageAsync(string userId, string? imagePath);
     }
 }

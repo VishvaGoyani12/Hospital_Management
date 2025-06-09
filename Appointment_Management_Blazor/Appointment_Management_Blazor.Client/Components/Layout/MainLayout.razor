@@ -2,6 +2,7 @@
 @inherits LayoutComponentBase
 @inject Blazored.LocalStorage.ILocalStorageService localStorage
 @inject NavigationManager NavigationManager
+@inject IAccountClientService AccountService
 
 <div class="d-flex flex-column min-vh-100 bg-light">
     <!-- Header -->
@@ -59,8 +60,16 @@
                     else
                     {
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-person-circle me-1"></i>@userEmail
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" data-bs-toggle="dropdown" aria-expanded="false">
+                                @if (!string.IsNullOrEmpty(profileImagePath))
+                                {
+                                    <img src="@profileImagePath" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;" alt="Profile" />
+                                }
+                                else
+                                {
+                                    <img src="Screenshot_24.png" alt="Admin Photo" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;" />
+                                }
+                                @userEmail
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                                 <li><NavLink class="dropdown-item" href="/profile"><i class="bi bi-person me-2"></i>Profile</NavLink></li>
@@ -97,14 +106,11 @@
 @code {
     private IEnumerable<string> userRoles = Enumerable.Empty<string>();
     private string? userEmail;
+    private string? profileImagePath; // Add this declaration
     private bool IsAuthenticated = false;
 
     protected override async Task OnInitializedAsync()
     {
-        // if (await localStorage.ContainKeyAsync("authToken"))
-        // {
-        //     await localStorage.RemoveItemAsync("authToken");
-        // }
         await LoadAuthState();
         NavigationManager.LocationChanged += HandleLocationChanged;
     }
@@ -125,6 +131,9 @@
                 userRoles = JwtParser.GetRolesFromToken(token);
                 userEmail = JwtParser.GetEmailFromToken(token);
                 IsAuthenticated = true;
+
+                // Load profile image if authenticated
+                await LoadProfileImage();
             }
             catch (Exception ex)
             {
@@ -138,6 +147,24 @@
             IsAuthenticated = false;
             userRoles = Enumerable.Empty<string>();
             userEmail = null;
+            profileImagePath = null;
+        }
+    }
+
+    private async Task LoadProfileImage()
+    {
+        try
+        {
+            var profileResponse = await AccountService.GetProfileAsync();
+            if (profileResponse != null && profileResponse.IsSuccess)
+            {
+                profileImagePath = profileResponse.ProfileImagePath;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading profile image: {ex.Message}");
         }
     }
 
@@ -147,6 +174,7 @@
         IsAuthenticated = false;
         userRoles = Enumerable.Empty<string>();
         userEmail = null;
+        profileImagePath = null; // Clear the profile image on logout
         NavigationManager.NavigateTo("/login", forceLoad: true);
     }
 }

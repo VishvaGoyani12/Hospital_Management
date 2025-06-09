@@ -17,6 +17,9 @@ namespace Appointment_Management_Blazor.Shared.HelperModel
 
     public class ProfileResponse : AuthResponse
     {
-        public UpdateProfileViewModel Profile { get; set; }
+        public bool IsSuccess { get; set; }
+        public string? Message { get; set; }
+        public UpdateProfileViewModel? Profile { get; set; }
+        public string? ProfileImagePath { get; set; }
     }
 }

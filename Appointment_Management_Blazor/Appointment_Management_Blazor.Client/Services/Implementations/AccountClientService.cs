@@ -4,6 +4,7 @@ using Appointment_Management_Blazor.Shared.HelperModel;
 using Appointment_Management_Blazor.Shared.Models;
 using Appointment_Management_Blazor.Shared.Models.DTOs;
 using Blazored.LocalStorage;
+using Microsoft.AspNetCore.Components.Forms;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -239,6 +240,55 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
         {
             await AddJwtTokenAsync();
             var response = await _httpClient.PutAsJsonAsync("api/account/profile", model);
+            return await response.Content.ReadFromJsonAsync<AuthResponse>();
+        }
+
+        private const long MaxAllowedFileSize = 5 * 1024 * 1024; // 5 MB
+
+        public async Task<ProfileResponse> UploadProfileImageAsync(IBrowserFile file)
+        {
+            try
+            {
+                await AddJwtTokenAsync();
+
+                using var content = new MultipartFormDataContent();
+
+
+                // 👇 This line throws if the file is larger than 512 KB by default unless you specify max
+                using var fileStream = file.OpenReadStream(MaxAllowedFileSize);
+                var fileContent = new StreamContent(fileStream);
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+                content.Add(fileContent, "file", file.Name);
+
+                var response = await _httpClient.PostAsync("api/account/upload-profile-image", content);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    return new ProfileResponse
+                    {
+                        IsSuccess = false,
+                        Message = $"Error uploading image: {errorContent}"
+                    };
+                }
+
+                return await response.Content.ReadFromJsonAsync<ProfileResponse>();
+            }
+            catch (Exception ex)
+            {
+                return new ProfileResponse
+                {
+                    IsSuccess = false,
+                    Message = $"Exception uploading image: {ex.Message}"
+                };
+            }
+        }
+
+
+        public async Task<AuthResponse> RemoveProfileImageAsync()
+        {
+            await AddJwtTokenAsync();
+            var response = await _httpClient.DeleteAsync("api/account/remove-profile-image");
             return await response.Content.ReadFromJsonAsync<AuthResponse>();
         }
 

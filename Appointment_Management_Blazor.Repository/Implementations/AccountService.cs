@@ -3,6 +3,7 @@ using Appointment_Management_Blazor.Interfaces.Interfaces;
 using Appointment_Management_Blazor.Shared;
 using Appointment_Management_Blazor.Shared.HelperModel;
 using Appointment_Management_Blazor.Shared.Models;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +25,8 @@ namespace Appointment_Management_Blazor.Services.Implementations
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AccountService> _logger;
+        private readonly IWebHostEnvironment _env;
+
 
         public AccountService(
             UserManager<ApplicationUser> userManager,
@@ -31,7 +34,7 @@ namespace Appointment_Management_Blazor.Services.Implementations
             IEmailSender emailSender,
             ApplicationDbContext context,
             IConfiguration configuration,
-            ILogger<AccountService> logger)
+            ILogger<AccountService> logger, IWebHostEnvironment env)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -39,6 +42,7 @@ namespace Appointment_Management_Blazor.Services.Implementations
             _context = context;
             _configuration = configuration;
             _logger = logger;
+            _env = env;
         }
 
         public async Task<AuthResponse> RegisterAsync(RegisterViewModel model, string? profileImagePath)
@@ -293,6 +297,20 @@ namespace Appointment_Management_Blazor.Services.Implementations
 
                 _logger.LogInformation($"Found user: {user.Email}");
 
+                // Get profile image path based on user role
+                string? profileImagePath = null;
+
+                if (await _userManager.IsInRoleAsync(user, "Doctor"))
+                {
+                    var doctor = await _context.Doctors.FirstOrDefaultAsync(d => d.ApplicationUserId == userId);
+                    profileImagePath = doctor?.ProfileImagePath;
+                }
+                else if (await _userManager.IsInRoleAsync(user, "Patient"))
+                {
+                    var patient = await _context.Patients.FirstOrDefaultAsync(p => p.ApplicationUserId == userId);
+                    profileImagePath = patient?.ProfileImagePath;
+                }
+
                 var profile = new UpdateProfileViewModel
                 {
                     FullName = user.FullName,
@@ -304,7 +322,8 @@ namespace Appointment_Management_Blazor.Services.Implementations
                 {
                     IsSuccess = true,
                     Message = "Profile retrieved successfully.",
-                    Profile = profile
+                    Profile = profile,
+                    ProfileImagePath = profileImagePath
                 };
             }
             catch (Exception ex)
@@ -345,6 +364,69 @@ namespace Appointment_Management_Blazor.Services.Implementations
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in UpdateProfileAsync");
+                return new AuthResponse
+                {
+                    IsSuccess = false,
+                    Message = $"An error occurred: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<AuthResponse> UpdateProfileImageAsync(string userId, string? imagePath)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null)
+                {
+                    return new AuthResponse { IsSuccess = false, Message = "User not found." };
+                }
+
+                // Update based on role
+                if (await _userManager.IsInRoleAsync(user, "Doctor"))
+                {
+                    var doctor = await _context.Doctors.FirstOrDefaultAsync(d => d.ApplicationUserId == userId);
+                    if (doctor != null)
+                    {
+                        // Delete old image if exists
+                        if (!string.IsNullOrEmpty(doctor.ProfileImagePath))
+                        {
+                            var oldImagePath = Path.Combine(_env.WebRootPath, doctor.ProfileImagePath.TrimStart('/'));
+                            if (File.Exists(oldImagePath))
+                            {
+                                File.Delete(oldImagePath);
+                            }
+                        }
+
+                        doctor.ProfileImagePath = imagePath;
+                        await _context.SaveChangesAsync();
+                    }
+                }
+                else if (await _userManager.IsInRoleAsync(user, "Patient"))
+                {
+                    var patient = await _context.Patients.FirstOrDefaultAsync(p => p.ApplicationUserId == userId);
+                    if (patient != null)
+                    {
+                        // Delete old image if exists
+                        if (!string.IsNullOrEmpty(patient.ProfileImagePath))
+                        {
+                            var oldImagePath = Path.Combine(_env.WebRootPath, patient.ProfileImagePath.TrimStart('/'));
+                            if (File.Exists(oldImagePath))
+                            {
+                                File.Delete(oldImagePath);
+                            }
+                        }
+
+                        patient.ProfileImagePath = imagePath;
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
+                return new AuthResponse { IsSuccess = true, Message = "Profile image updated successfully." };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating profile image");
                 return new AuthResponse
                 {
                     IsSuccess = false,

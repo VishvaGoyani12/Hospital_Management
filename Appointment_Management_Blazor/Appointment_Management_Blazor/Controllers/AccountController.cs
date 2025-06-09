@@ -298,6 +298,110 @@ namespace Appointment_Management_Blazor.Controllers
                 });
             }
         }
+
+        [Authorize(Roles = "Patient,Doctor")]
+        [HttpPost("upload-profile-image")]
+        public async Task<IActionResult> UploadProfileImage(IFormFile file)
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new AuthResponse { IsSuccess = false, Message = "User not authenticated" });
+                }
+
+                if (file == null || file.Length == 0)
+                {
+                    return BadRequest(new ProfileResponse { IsSuccess = false, Message = "No file uploaded" });
+                }
+
+                // Validate file type and size
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+                var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                if (!allowedExtensions.Contains(extension))
+                {
+                    return BadRequest(new ProfileResponse { IsSuccess = false, Message = "Invalid file type" });
+                }
+
+                if (file.Length > 5 * 1024 * 1024) // 5MB
+                {
+                    return BadRequest(new ProfileResponse { IsSuccess = false, Message = "File size exceeds 5MB limit" });
+                }
+
+                // Create unique filename
+                var fileName = $"{Guid.NewGuid()}{extension}";
+                var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "profile-images");
+                Directory.CreateDirectory(uploadsFolder);
+                var filePath = Path.Combine(uploadsFolder, fileName);
+
+                // Save the file
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                // Update the user's profile image path
+                var result = await _accountService.UpdateProfileImageAsync(userId, $"/uploads/profile-images/{fileName}");
+
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(result);
+                }
+
+                return Ok(new ProfileResponse
+                {
+                    IsSuccess = true,
+                    Message = "Profile image uploaded successfully",
+                    ProfileImagePath = $"/uploads/profile-images/{fileName}"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error uploading profile image");
+                return StatusCode(500, new ProfileResponse
+                {
+                    IsSuccess = false,
+                    Message = "An internal server error occurred"
+                });
+            }
+        }
+
+        [Authorize(Roles = "Patient,Doctor")]
+        [HttpDelete("remove-profile-image")]
+        public async Task<IActionResult> RemoveProfileImage()
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new AuthResponse { IsSuccess = false, Message = "User not authenticated" });
+                }
+
+                var result = await _accountService.UpdateProfileImageAsync(userId, null);
+
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(result);
+                }
+
+                return Ok(new AuthResponse
+                {
+                    IsSuccess = true,
+                    Message = "Profile image removed successfully"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error removing profile image");
+                return StatusCode(500, new AuthResponse
+                {
+                    IsSuccess = false,
+                    Message = "An internal server error occurred"
+                });
+            }
+        }
     }
 
 }

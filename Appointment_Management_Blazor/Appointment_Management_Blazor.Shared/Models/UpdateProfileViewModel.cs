@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Components.Forms;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -18,5 +19,7 @@ namespace Appointment_Management_Blazor.Shared.Models
         [Required]
         [EmailAddress]
         public string Email { get; set; }
+        public string? ProfileImagePath { get; set; } 
+        public IBrowserFile? ImageFile { get; set; } 
     }
 }

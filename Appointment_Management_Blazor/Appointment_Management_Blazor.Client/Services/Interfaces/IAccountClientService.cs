@@ -3,6 +3,7 @@
 using Appointment_Management_Blazor.Shared.HelperModel;
 using Appointment_Management_Blazor.Shared.Models;
 using Appointment_Management_Blazor.Shared.Models.DTOs;
+using Microsoft.AspNetCore.Components.Forms;
 
 namespace Appointment_Management_Blazor.Client.Services.Interfaces
 {
@@ -16,5 +17,7 @@ namespace Appointment_Management_Blazor.Client.Services.Interfaces
         Task<AuthResponse> ChangePasswordAsync(ChangePasswordViewModel model);
         Task<ProfileResponse> GetProfileAsync();
         Task<AuthResponse> UpdateProfileAsync(UpdateProfileViewModel model);
+        Task<ProfileResponse> UploadProfileImageAsync(IBrowserFile file);
+        Task<AuthResponse> RemoveProfileImageAsync();
     }
 }

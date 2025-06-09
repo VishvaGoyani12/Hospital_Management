@@ -1,9 +1,9 @@
 ﻿@page "/profile"
 @using Appointment_Management_Blazor.Shared.HelperModel
+@using Microsoft.AspNetCore.Components.Forms
 @inject IAccountClientService AccountService
 @inject NavigationManager Navigation
 @inject ILocalStorageService LocalStorage
-
 
 <h3 class="mb-4">My Profile</h3>
 
@@ -20,8 +20,45 @@ else if (profileResponse != null && profileResponse.IsSuccess)
 {
     <div class="card shadow-lg border-0" style="max-width: 600px; margin: 0 auto;">
         <div class="card-body p-4">
-            <EditForm Model="@profileResponse.Profile" OnValidSubmit="@HandleUpdateProfile">
+            <EditForm Model="@profileResponse.Profile" OnValidSubmit="@HandleUpdateProfile" enctype="multipart/form-data">
                 <DataAnnotationsValidator />
+
+                @if (userRoles.Contains("Doctor", StringComparer.OrdinalIgnoreCase) || userRoles.Contains("Patient", StringComparer.OrdinalIgnoreCase))
+                {
+                    <div class="mb-4 text-center">
+                        @if (!string.IsNullOrEmpty(profileResponse.ProfileImagePath))
+                        {
+                            <img src="@profileResponse.ProfileImagePath"
+                                 class="rounded-circle shadow-sm"
+                                 style="width: 120px; height: 120px; object-fit: cover;"
+                                 alt="Profile Picture" />
+                        }
+                        else
+                        {
+                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center"
+                                 style="width: 120px; height: 120px; margin: 0 auto;">
+                                <i class="bi bi-person-fill fs-1 text-secondary"></i>
+                            </div>
+                        }
+
+                        <div class="mt-3">
+                            <label for="fileUpload" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-upload me-1"></i> Change Photo
+                            </label>
+                            <InputFile id="fileUpload"
+                                       class="d-none"
+                                       accept="image/*"
+                                       OnChange="@HandleFileSelected" />
+                            @if (!string.IsNullOrEmpty(profileResponse.ProfileImagePath))
+                            {
+                                <button type="button" class="btn btn-outline-danger btn-sm ms-2" @onclick="RemoveProfileImage">
+                                    <i class="bi bi-trash me-1"></i> Remove
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+
 
                 <div class="mb-3">
                     <label class="form-label">Full Name</label>
@@ -46,7 +83,17 @@ else if (profileResponse != null && profileResponse.IsSuccess)
                 </div>
 
                 <div class="d-grid">
-                    <button type="submit" class="btn btn-primary fw-semibold">Update Profile</button>
+                    <button type="submit" class="btn btn-primary fw-semibold">
+                        @if (isUpdating)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                            <span>Updating...</span>
+                        }
+                        else
+                        {
+                            <span>Update Profile</span>
+                        }
+                    </button>
                 </div>
             </EditForm>
 
@@ -72,14 +119,18 @@ else
     </div>
 }
 
-
 @code {
+    private List<string> userRoles = new();
+
     private ProfileResponse profileResponse = new();
+    private IBrowserFile selectedFile;
     private string Message { get; set; }
     private string errorMessage = "Failed to load profile";
     private bool IsSuccess { get; set; }
     private bool isLoading = true;
+    private bool isUpdating = false;
     private bool isUnauthorized;
+    private long maxFileSize = 1024 * 1024 * 5; 
 
     protected override async Task OnInitializedAsync()
     {
@@ -87,6 +138,8 @@ else
         {
             // Check if we have a token first
             var token = await LocalStorage.GetItemAsStringAsync("jwt_token");
+            userRoles = JwtParser.GetRolesFromToken(token).ToList();
+
             if (string.IsNullOrWhiteSpace(token))
             {
                 isUnauthorized = true;
@@ -125,12 +178,68 @@ else
         }
     }
 
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+
+               var result = await AccountService.UploadProfileImageAsync(selectedFile);
+        IsSuccess = result.IsSuccess;
+        Message = result.Message;
+
+        if (IsSuccess)
+        {
+            profileResponse.Profile.ProfileImagePath = result.ProfileImagePath;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task RemoveProfileImage()
+    {
+        try
+        {
+            profileResponse.Profile.ImageFile = null;
+            profileResponse.ProfileImagePath = null;
+            profileResponse.Profile.ProfileImagePath = null;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            IsSuccess = false;
+            Message = $"Error removing image: {ex.Message}";
+            StateHasChanged();
+        }
+    }
+
     private async Task HandleUpdateProfile()
     {
+        isUpdating = true;
+        Message = string.Empty;
+        StateHasChanged();
+
         try
         {
             if (profileResponse?.Profile == null) return;
 
+            // If there's a new image file, upload it first
+            if (profileResponse.Profile.ImageFile != null)
+            {
+                var uploadResponse = await AccountService.UploadProfileImageAsync(profileResponse.Profile.ImageFile);
+
+                if (!uploadResponse.IsSuccess)
+                {
+                    IsSuccess = false;
+                    Message = uploadResponse.Message;
+                    isUpdating = false;
+                    StateHasChanged();
+                    return;
+                }
+
+                // Update the profile image path in the model
+                profileResponse.Profile.ProfileImagePath = uploadResponse.ProfileImagePath;
+            }
+
+            // Update the profile
             var result = await AccountService.UpdateProfileAsync(profileResponse.Profile);
 
             IsSuccess = result.IsSuccess;
@@ -147,7 +256,10 @@ else
             IsSuccess = false;
             Message = $"Update failed: {ex.Message}";
         }
-
-        StateHasChanged();
+        finally
+        {
+            isUpdating = false;
+            StateHasChanged();
+        }
     }
 }

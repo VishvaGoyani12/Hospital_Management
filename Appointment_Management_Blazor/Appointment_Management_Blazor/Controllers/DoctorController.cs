@@ -33,11 +33,18 @@ namespace Appointment_Management_Blazor.Controllers
         }
 
         [HttpPost("create")]
-        public async Task<IActionResult> CreateDoctor([FromBody] DoctorViewModel model)
+        public async Task<IActionResult> CreateDoctor([FromForm] DoctorViewModel model)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var (success, message) = await _doctorService.CreateDoctorAsync(model);
-            if (!success) return BadRequest(new { success = false, message });
-            return Ok(new { success = true });
+            if (!success)
+                return BadRequest(message);
+
+            return Ok(new { Success = true, Message = message });
         }
 
         [HttpGet("{id}")]
@@ -57,7 +64,7 @@ namespace Appointment_Management_Blazor.Controllers
         }
 
         [HttpPut("edit")]
-        public async Task<IActionResult> EditDoctor([FromBody] DoctorViewModel model)
+        public async Task<IActionResult> EditDoctor([FromForm] DoctorViewModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -66,9 +73,9 @@ namespace Appointment_Management_Blazor.Controllers
 
             var (success, message) = await _doctorService.UpdateDoctorAsync(model);
             if (!success)
-                return BadRequest(message); 
+                return BadRequest(message);
 
-            return Ok(message); 
+            return Ok(new { Success = true, Message = message });
         }
 
 

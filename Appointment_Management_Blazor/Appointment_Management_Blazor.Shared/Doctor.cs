@@ -20,6 +20,9 @@ namespace Appointment_Management_Blazor.Shared
 
         public string SpecialistIn { get; set; }
         public bool Status { get; set; }
+
+        public string? ProfileImagePath { get; set; }
+
         public ICollection<Appointment>? Appointments { get; set; }
     }
 }

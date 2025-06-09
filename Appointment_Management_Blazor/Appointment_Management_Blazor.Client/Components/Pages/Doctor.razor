@@ -54,6 +54,7 @@ else
                 <table class="table table-striped table-bordered table-hover align-middle" style="background-color: #fdfdfd;">
                     <thead class="table-light" style="background-color: #eaf1f8;">
                         <tr>
+                            <th>Image</th>          
                             <th @onclick="@(() => OnSort("FullName"))" style="cursor:pointer">
                                 Full Name <i class="@GetSortIconClass("FullName") ms-1"></i>
                             </th>
@@ -73,6 +74,16 @@ else
                         @foreach (var doctor in doctors.Data)
                         {
                             <tr>
+                                <td>
+                    @if (!string.IsNullOrEmpty(doctor.ProfileImagePath))
+                    {
+                        <img src="@doctor.ProfileImagePath" class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover;" />
+                    }
+                    else
+                    {
+                        <div class="rounded-circle bg-secondary" style="width: 50px; height: 50px;"></div>
+                    }
+                </td>
                                 <td>@doctor.FullName</td>
                                 <td>@doctor.Gender</td>
                                 <td>@doctor.SpecialistIn</td>
@@ -128,88 +139,100 @@ else
                 </div>
                 <div class="modal-body">
                     <EditForm Model="@doctorModel" OnValidSubmit="HandleValidSubmit">
-    <DataAnnotationsValidator />
+                        <DataAnnotationsValidator />
 
-    <div class="row g-3">
-        <div class="col-md-6">
-            <label class="form-label">Full Name</label>
-            <InputText class="form-control" @bind-Value="doctorModel.FullName" />
-            <ValidationMessage For="@(() => doctorModel.FullName)" class="text-danger" />
-        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Full Name</label>
+                                <InputText class="form-control" @bind-Value="doctorModel.FullName" />
+                                <ValidationMessage For="@(() => doctorModel.FullName)" class="text-danger" />
+                            </div>
 
-        <div class="col-md-6">
-            <label class="form-label">Gender</label>
-            <InputSelect class="form-select" @bind-Value="doctorModel.Gender">
-                <option value="">Select Gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-            </InputSelect>
-            <ValidationMessage For="@(() => doctorModel.Gender)" class="text-danger" />
-        </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Gender</label>
+                                <InputSelect class="form-select" @bind-Value="doctorModel.Gender">
+                                    <option value="">Select Gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </InputSelect>
+                                <ValidationMessage For="@(() => doctorModel.Gender)" class="text-danger" />
+                            </div>
 
-        <div class="col-md-6">
-            <label class="form-label">Specialization</label>
-            <InputText class="form-control" @bind-Value="doctorModel.SpecialistIn" />
-            <ValidationMessage For="@(() => doctorModel.SpecialistIn)" class="text-danger" />
-        </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Specialization</label>
+                                <InputText class="form-control" @bind-Value="doctorModel.SpecialistIn" />
+                                <ValidationMessage For="@(() => doctorModel.SpecialistIn)" class="text-danger" />
+                            </div>
 
-        <div class="col-md-6">
-            <label class="form-label">Status</label>
-            <InputSelect class="form-select" @bind-Value="doctorModel.Status">
-                <option value="true">Active</option>
-                <option value="false">Inactive</option>
-            </InputSelect>
-            <ValidationMessage For="@(() => doctorModel.Status)" class="text-danger" />
-        </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Status</label>
+                                <InputSelect class="form-select" @bind-Value="doctorModel.Status">
+                                    <option value="true">Active</option>
+                                    <option value="false">Inactive</option>
+                                </InputSelect>
+                                <ValidationMessage For="@(() => doctorModel.Status)" class="text-danger" />
+                            </div>
 
-        @if (string.IsNullOrEmpty(selectedDoctorId))
-{
-    <div class="col-md-6">
-        <label class="form-label">Email</label>
-        <InputText class="form-control" @bind-Value="doctorModel.Email"/>
-        <ValidationMessage For="@(() => doctorModel.Email)" class="text-danger" />
-    </div>
+                            @if (string.IsNullOrEmpty(selectedDoctorId))
+                            {
+                                <div class="col-md-6">
+                                    <label class="form-label">Email</label>
+                                    <InputText class="form-control" @bind-Value="doctorModel.Email"/>
+                                    <ValidationMessage For="@(() => doctorModel.Email)" class="text-danger" />
+                                </div>
 
-    <div class="col-md-6">
-        <label class="form-label">Password</label>
-        <InputText type="password" class="form-control" @bind-Value="doctorModel.Password" />
-        <ValidationMessage For="@(() => doctorModel.Password)" class="text-danger" />
-    </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Password</label>
+                                    <InputText type="password" class="form-control" @bind-Value="doctorModel.Password" />
+                                    <ValidationMessage For="@(() => doctorModel.Password)" class="text-danger" />
+                                </div>
 
-    <div class="col-md-6">
-        <label class="form-label">Confirm Password</label>
-        <InputText type="password" class="form-control" @bind-Value="doctorModel.ConfirmPassword" />
-        <ValidationMessage For="@(() => doctorModel.ConfirmPassword)" class="text-danger" />
-    </div>
-}
-else
-{
-    <div class="col-md-6">
-        <label class="form-label">Email</label>
-        <InputText class="form-control" @bind-Value="doctorModel.Email" disabled />
-    </div>
-}
-    </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Confirm Password</label>
+                                    <InputText type="password" class="form-control" @bind-Value="doctorModel.ConfirmPassword" />
+                                    <ValidationMessage For="@(() => doctorModel.ConfirmPassword)" class="text-danger" />
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="col-md-6">
+                                    <label class="form-label">Email</label>
+                                    <InputText class="form-control" @bind-Value="doctorModel.Email" disabled />
+                                </div>
+                            }
 
-    <div class="modal-footer mt-4">
-        <button type="button" class="btn btn-secondary" @onclick="CloseDialog">Cancel</button>
-        <button type="submit" class="btn btn-primary">
-            <i class="bi bi-save me-1"></i> Save
-        </button>
-    </div>
-</EditForm>
+                            <div class="col-md-12">
+                                <label class="form-label">Profile Image</label>
+                                <InputFile class="form-control" OnChange="HandleProfileImageUpload" 
+                                           accept=".jpg,.jpeg,.png,.gif" />
+                                <ValidationMessage For="@(() => doctorModel.ProfileImage)" class="text-danger" />
+                                
+                                @if (!string.IsNullOrEmpty(doctorModel.ProfileImagePath))
+                                {
+                                    <div class="mt-2">
+                                        <img src="@doctorModel.ProfileImagePath" class="img-thumbnail" style="max-width: 150px; max-height: 150px;" />
+                                    </div>
+                                }
+                            </div>
+                        </div>
 
+                        <div class="modal-footer mt-4">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseDialog">Cancel</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-1"></i> Save
+                            </button>
+                        </div>
+                    </EditForm>
                 </div>
             </div>
         </div>
     </div>
 }
 
-
 @code {
     private DoctorListResponse doctors = new();
-    private DoctorViewModel doctorModel = new();
+    private DoctorCreateEditModel doctorModel = new DoctorCreateEditModel();
     private string selectedDoctorId = string.Empty;
     private bool showDialog = false;
     private bool isLoading = true;
@@ -373,33 +396,59 @@ else
         }
     }
 
-    private async Task AddNewDoctor()
+     private async Task AddNewDoctor()
     {
-        doctorModel = new DoctorViewModel();
+        doctorModel = new DoctorCreateEditModel();
         selectedDoctorId = string.Empty;
         showDialog = true;
     }
 
-    private async Task EditDoctor(string id)
-{
-    if (string.IsNullOrEmpty(id)) return;
-
-    var doctor = await DoctorService.GetDoctorByIdAsync(id);
-    if (doctor != null)
+    private async Task HandleProfileImageUpload(InputFileChangeEventArgs e)
     {
-        doctorModel = new DoctorViewModel
+        var file = e.File;
+        if (file != null)
         {
-            ApplicationUserId = id,
-            FullName = doctor.FullName,
-            Email = doctor.Email,  
-            Gender = doctor.Gender,
-            SpecialistIn = doctor.SpecialistIn,
-            Status = doctor.Status,           
-        };
-        selectedDoctorId = id;
-        showDialog = true;
+            if (file.Size > 5 * 1024 * 1024)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "File size must be less than 5MB");
+                return;
+            }
+
+            var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif" };
+            if (!allowedTypes.Contains(file.ContentType))
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Only JPG, PNG, and GIF images are allowed");
+                return;
+            }
+
+            doctorModel.ProfileImage = file;
+            StateHasChanged();
+        }
     }
-}
+
+
+    private async Task EditDoctor(string id)
+    {
+        if (string.IsNullOrEmpty(id)) return;
+
+        var doctor = await DoctorService.GetDoctorByIdAsync(id);
+        if (doctor != null)
+        {
+            doctorModel = new DoctorCreateEditModel
+            {
+                ApplicationUserId = id,
+                FullName = doctor.FullName,
+                Email = doctor.Email,
+                Gender = doctor.Gender,
+                SpecialistIn = doctor.SpecialistIn,
+                Status = doctor.Status,
+                ProfileImagePath = doctor.ProfileImagePath
+            };
+            selectedDoctorId = id;
+            showDialog = true;
+        }
+    }
+
 
     private async Task DeleteDoctor(string id)
 {
@@ -422,44 +471,44 @@ else
 }
 
     private async Task HandleValidSubmit()
-{
-    try
     {
-        ApiResponse result;
-        if (string.IsNullOrEmpty(selectedDoctorId))
+        try
         {
-            // For create,  all fields
-            if (string.IsNullOrEmpty(doctorModel.Email) || 
-                string.IsNullOrEmpty(doctorModel.Password) ||
-                string.IsNullOrEmpty(doctorModel.ConfirmPassword))
+            ApiResponse result;
+            if (string.IsNullOrEmpty(selectedDoctorId))
             {
-                await JSRuntime.InvokeVoidAsync("alert", "Email, Password and Confirm Password are required when creating a new doctor");
-                return;
-            }
-            
-            result = await DoctorService.CreateDoctorAsync(doctorModel);
-        }
-        else
-        {
-            result = await DoctorService.UpdateDoctorAsync(doctorModel);
-        }
+                if (string.IsNullOrEmpty(doctorModel.Email) ||
+                    string.IsNullOrEmpty(doctorModel.Password) ||
+                    string.IsNullOrEmpty(doctorModel.ConfirmPassword))
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", "Email, Password and Confirm Password are required when creating a new doctor");
+                    return;
+                }
 
-        if (result.Success)
-        {
-            showDialog = false;
-            await LoadDoctors();
-            await JSRuntime.InvokeVoidAsync("alert", result.Message ?? "Operation completed successfully");
+                result = await DoctorService.CreateDoctorAsync(doctorModel);
+            }
+            else
+            {
+                result = await DoctorService.UpdateDoctorAsync(doctorModel);
+            }
+
+            if (result.Success)
+            {
+                showDialog = false;
+                await LoadDoctors();
+                await JSRuntime.InvokeVoidAsync("alert", result.Message ?? "Operation completed successfully");
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", result.Message ?? "Operation failed");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            await JSRuntime.InvokeVoidAsync("alert", result.Message ?? "Operation failed");
+            await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
         }
     }
-    catch (Exception ex)
-    {
-        await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
-    }
-}
+
 
     private void CloseDialog()
     {

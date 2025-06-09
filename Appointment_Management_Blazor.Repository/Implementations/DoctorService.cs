@@ -3,6 +3,7 @@ using Appointment_Management_Blazor.Interfaces.Interfaces;
 using Appointment_Management_Blazor.Shared;
 using Appointment_Management_Blazor.Shared.Models;
 using Appointment_Management_Blazor.Shared.Models.DTOs;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -14,14 +15,17 @@ namespace Appointment_Management_Blazor.Repository.Implementations
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IWebHostEnvironment _env;
+
 
         public DoctorService(ApplicationDbContext context,
                              UserManager<ApplicationUser> userManager,
-                             RoleManager<IdentityRole> roleManager)
+                             RoleManager<IdentityRole> roleManager,IWebHostEnvironment env)
         {
             _context = context;
             _userManager = userManager;
             _roleManager = roleManager;
+            _env = env;
         }
 
         public async Task<DoctorListResponse> GetAllDoctorsAsync(DoctorFilterModel filters)
@@ -92,20 +96,20 @@ namespace Appointment_Management_Blazor.Repository.Implementations
             }
 
 
-            // Apply pagination
             var doctors = await query
-                .Skip(filters.Start)
-                .Take(filters.Length)
-                .Select(d => new DoctorDto
-                {
-                    Id = d.ApplicationUserId,
-                    FullName = d.ApplicationUser.FullName,
-                    Gender = d.ApplicationUser.Gender,
-                    Email = d.ApplicationUser.Email,
-                    SpecialistIn = d.SpecialistIn,
-                    Status = d.Status
-                })
-                .ToListAsync();
+        .Skip(filters.Start)
+        .Take(filters.Length)
+        .Select(d => new DoctorDto
+        {
+            Id = d.ApplicationUserId,
+            FullName = d.ApplicationUser.FullName,
+            Gender = d.ApplicationUser.Gender,
+            Email = d.ApplicationUser.Email,
+            SpecialistIn = d.SpecialistIn,
+            Status = d.Status,
+            ProfileImagePath = d.ProfileImagePath 
+        })
+        .ToListAsync();
 
             return new DoctorListResponse
             {
@@ -127,6 +131,13 @@ namespace Appointment_Management_Blazor.Repository.Implementations
             var existing = await _userManager.FindByEmailAsync(model.Email);
             if (existing != null)
                 return (false, "A doctor with this email already exists.");
+
+            // Handle image upload
+            string imagePath = null;
+            if (model.ProfileImage != null && model.ProfileImage.Length > 0)
+            {
+                imagePath = await SaveProfileImage(model.ProfileImage, "doctors");
+            }
 
             var user = new ApplicationUser
             {
@@ -151,7 +162,8 @@ namespace Appointment_Management_Blazor.Repository.Implementations
             {
                 ApplicationUserId = user.Id,
                 SpecialistIn = model.SpecialistIn,
-                Status = model.Status
+                Status = model.Status,
+                ProfileImagePath = imagePath
             };
 
             _context.Doctors.Add(doctor);
@@ -204,6 +216,16 @@ namespace Appointment_Management_Blazor.Repository.Implementations
                 if (doctor == null)
                 {
                     return (false, "Doctor not found");
+                }
+                if (model.ProfileImage != null && model.ProfileImage.Length > 0)
+                {
+                    // Delete old image if exists
+                    if (!string.IsNullOrEmpty(doctor.ProfileImagePath))
+                    {
+                        DeleteProfileImage(doctor.ProfileImagePath);
+                    }
+
+                    doctor.ProfileImagePath = await SaveProfileImage(model.ProfileImage, "doctors");
                 }
 
                 // Check if doctor has pending or confirmed appointments
@@ -261,6 +283,32 @@ namespace Appointment_Management_Blazor.Repository.Implementations
             }
         }
 
+        private async Task<string> SaveProfileImage(IFormFile imageFile, string folderName)
+        {
+            var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", folderName);
+            Directory.CreateDirectory(uploadsFolder);
+
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(imageFile.FileName)}";
+            var filePath = Path.Combine(uploadsFolder, fileName);
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await imageFile.CopyToAsync(fileStream);
+            }
+
+            return $"/uploads/{folderName}/{fileName}";
+        }
+
+        private void DeleteProfileImage(string imagePath)
+        {
+            if (string.IsNullOrEmpty(imagePath)) return;
+
+            var fullPath = Path.Combine(_env.WebRootPath, imagePath.TrimStart('/'));
+            if (File.Exists(fullPath))
+            {
+                File.Delete(fullPath);
+            }
+        }
 
 
         public async Task<(bool Success, string Message)> DeleteDoctorAsync(string id)

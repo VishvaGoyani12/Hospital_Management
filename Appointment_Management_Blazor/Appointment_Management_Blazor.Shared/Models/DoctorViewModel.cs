@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Http;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace Appointment_Management_Blazor.Shared.Models
@@ -27,6 +29,10 @@ namespace Appointment_Management_Blazor.Shared.Models
 
         [Required]
         public string SpecialistIn { get; set; }
+
+        public IFormFile? ProfileImage { get; set; }  
+
+        public string? ProfileImagePath { get; set; }
 
         public bool Status { get; set; }
     }

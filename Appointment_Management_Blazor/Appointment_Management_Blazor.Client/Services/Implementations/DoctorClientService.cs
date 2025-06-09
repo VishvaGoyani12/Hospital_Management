@@ -67,12 +67,37 @@ public class DoctorClientService : IDoctorClientService
         return null;
     }
 
-    public async Task<ApiResponse> CreateDoctorAsync(DoctorViewModel model)
+    public async Task<ApiResponse> CreateDoctorAsync(DoctorCreateEditModel model)
     {
         try
         {
             await AddJwtTokenAsync();
-            var response = await _httpClient.PostAsJsonAsync("api/doctor/create", model);
+
+            var content = new MultipartFormDataContent();
+            content.Add(new StringContent(model.FullName ?? ""), nameof(model.FullName));
+            content.Add(new StringContent(model.Gender ?? ""), nameof(model.Gender));
+            content.Add(new StringContent(model.Email ?? ""), nameof(model.Email));
+            content.Add(new StringContent(model.SpecialistIn ?? ""), nameof(model.SpecialistIn));
+            content.Add(new StringContent(model.Status.ToString()), nameof(model.Status));
+
+            if (!string.IsNullOrEmpty(model.Password))
+            {
+                content.Add(new StringContent(model.Password), nameof(model.Password));
+                content.Add(new StringContent(model.ConfirmPassword ?? ""), nameof(model.ConfirmPassword));
+            }
+
+            if (model.ProfileImage != null)
+            {
+                // Limit max stream size and open stream
+                var stream = model.ProfileImage.OpenReadStream(1024 * 1024 * 10); // 10 MB max
+                var fileContent = new StreamContent(stream);
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue(model.ProfileImage.ContentType);
+
+                // "ProfileImage" must match server property name exactly
+                content.Add(fileContent, nameof(model.ProfileImage), model.ProfileImage.Name);
+            }
+
+            var response = await _httpClient.PostAsync("api/doctor/create", content);
 
             if (response.IsSuccessStatusCode)
                 return await response.Content.ReadFromJsonAsync<ApiResponse>();
@@ -86,18 +111,41 @@ public class DoctorClientService : IDoctorClientService
         }
     }
 
-    public async Task<ApiResponse> UpdateDoctorAsync(DoctorViewModel model)
+
+    public async Task<ApiResponse> UpdateDoctorAsync(DoctorCreateEditModel model)
     {
         try
         {
             await AddJwtTokenAsync();
-            var response = await _httpClient.PutAsJsonAsync("api/doctor/edit", model);
+
+            var content = new MultipartFormDataContent();
+            content.Add(new StringContent(model.ApplicationUserId ?? ""), "ApplicationUserId");
+            content.Add(new StringContent(model.FullName ?? ""), "FullName");
+            content.Add(new StringContent(model.Gender ?? ""), "Gender");
+            content.Add(new StringContent(model.Email ?? ""), "Email");
+            content.Add(new StringContent(model.SpecialistIn ?? ""), "SpecialistIn");
+            content.Add(new StringContent(model.Status.ToString()), "Status");
+
+            if (!string.IsNullOrEmpty(model.Password))
+            {
+                content.Add(new StringContent(model.Password), "Password");
+                content.Add(new StringContent(model.ConfirmPassword), "ConfirmPassword");
+            }
+
+            if (model.ProfileImage != null)
+            {
+                var fileContent = new StreamContent(model.ProfileImage.OpenReadStream(1024 * 1024 * 10)); 
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue(model.ProfileImage.ContentType);
+                content.Add(fileContent, "ProfileImage", model.ProfileImage.Name);
+            }
+
+            var response = await _httpClient.PutAsync("api/doctor/edit", content);
 
             if (response.IsSuccessStatusCode)
                 return await response.Content.ReadFromJsonAsync<ApiResponse>();
 
             var errorContent = await response.Content.ReadAsStringAsync();
-            return new ApiResponse { Success = false, Message = errorContent.Trim('"') }; // remove quotes if any
+            return new ApiResponse { Success = false, Message = errorContent.Trim('"') };
         }
         catch (Exception ex)
         {

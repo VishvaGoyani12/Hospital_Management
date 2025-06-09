@@ -8,8 +8,8 @@ namespace Appointment_Management_Blazor.Client.Services.Interfaces
     {
         Task<DoctorListResponse> GetAllDoctorsAsync(DoctorFilterModel filters);
         Task<DoctorDto> GetDoctorByIdAsync(string id);
-        Task<ApiResponse> CreateDoctorAsync(DoctorViewModel model);
-        Task<ApiResponse> UpdateDoctorAsync(DoctorViewModel model);
+        Task<ApiResponse> CreateDoctorAsync(DoctorCreateEditModel model);
+        Task<ApiResponse> UpdateDoctorAsync(DoctorCreateEditModel model);
         Task<ApiResponse> DeleteDoctorAsync(string id);
         Task<List<string>> GetSpecialistListAsync();
     }

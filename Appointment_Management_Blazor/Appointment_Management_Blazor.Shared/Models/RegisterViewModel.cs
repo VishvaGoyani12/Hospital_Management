@@ -26,6 +26,6 @@ namespace Appointment_Management_Blazor.Shared.Models
         [Required(ErrorMessage = "Confirm Password is required")]
         [Compare("Password", ErrorMessage = "Passwords do not match")]
         public string ConfirmPassword { get; set; } = string.Empty;
-        public IFormFile? ProfileImage { get; set; } // Image file
+        public IFormFile? ProfileImage { get; set; } 
     }
 }

@@ -190,6 +190,7 @@ else
                 </div>
                 <div class="modal-body">
                     <EditForm Model="@doctorModel" OnValidSubmit="HandleValidSubmit">
+                        <ValidationSummary style="display:none" />
                         <DataAnnotationsValidator />
 
                         <div class="row g-3">

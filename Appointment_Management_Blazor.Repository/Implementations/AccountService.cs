@@ -433,8 +433,80 @@ namespace Appointment_Management_Blazor.Services.Implementations
                     Message = $"An error occurred: {ex.Message}"
                 };
             }
+
+
         }
 
+        public async Task<AuthResponse> InitiateEmailChangeAsync(string userId, string newEmail)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null)
+                    return new AuthResponse { IsSuccess = false, Message = "User not found." };
+
+                if (string.Equals(user.Email, newEmail, StringComparison.OrdinalIgnoreCase))
+                    return new AuthResponse { IsSuccess = false, Message = "New email cannot be the same as current email." };
+
+                var existingUser = await _userManager.FindByEmailAsync(newEmail);
+                if (existingUser != null)
+                    return new AuthResponse { IsSuccess = false, Message = "Email already in use by another account." };
+
+                var token = await _userManager.GenerateChangeEmailTokenAsync(user, newEmail);
+                var confirmationUrl = $"{_configuration["ClientUrl"]}/api/account/confirm-email-change?userId={user.Id}&newEmail={HttpUtility.UrlEncode(newEmail)}&token={HttpUtility.UrlEncode(token)}";
+
+                await _emailSender.SendEmailAsync(newEmail, "Confirm your new email",
+                    $@"Please confirm your new email by clicking the link below:<br/><br/>
+            <a href='{confirmationUrl}'>Click to confirm your email change</a><br/><br/>
+            If you didn't request this change, please ignore this email.");
+
+                return new AuthResponse { IsSuccess = true, Message = "Confirmation link has been sent to your new email address." };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error initiating email change");
+                return new AuthResponse
+                {
+                    IsSuccess = false,
+                    Message = $"An error occurred: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<AuthResponse> ConfirmEmailChangeAsync(string userId, string newEmail, string token)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null)
+                    return new AuthResponse { IsSuccess = false, Message = "User not found." };
+
+                var result = await _userManager.ChangeEmailAsync(user, newEmail, token);
+                if (!result.Succeeded)
+                {
+                    var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                    return new AuthResponse { IsSuccess = false, Message = errors };
+                }
+
+                // Update the username if it's the same as the old email
+                if (user.UserName == user.Email)
+                {
+                    user.UserName = newEmail;
+                    await _userManager.UpdateAsync(user);
+                }
+
+                return new AuthResponse { IsSuccess = true, Message = "Email changed successfully. Please login with your new email." };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error confirming email change");
+                return new AuthResponse
+                {
+                    IsSuccess = false,
+                    Message = $"An error occurred: {ex.Message}"
+                };
+            }
+        }
 
     }
 

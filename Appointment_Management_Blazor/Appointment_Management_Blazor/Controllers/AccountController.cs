@@ -402,6 +402,62 @@ namespace Appointment_Management_Blazor.Controllers
                 });
             }
         }
+
+        [Authorize]
+        [HttpPost("change-email")]
+        public async Task<IActionResult> ChangeEmail([FromBody] ChangeEmailRequestModel model)
+        {
+            try
+            {
+                if (model == null)
+                    return BadRequest(new AuthResponse { IsSuccess = false, Message = "Request body cannot be null" });
+
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized(new AuthResponse { IsSuccess = false, Message = "User not authenticated" });
+
+                var result = await _accountService.InitiateEmailChangeAsync(userId, model.NewEmail);
+
+                if (!result.IsSuccess)
+                    return BadRequest(result);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during email change initiation");
+                return StatusCode(500, new AuthResponse
+                {
+                    IsSuccess = false,
+                    Message = "An internal server error occurred"
+                });
+            }
+        }
+
+        [HttpGet("confirm-email-change")]
+        public async Task<IActionResult> ConfirmEmailChange(string userId, string newEmail, string token)
+        {
+            _logger.LogInformation("ConfirmEmailChange called with userId: {UserId}, newEmail: {NewEmail}", userId, newEmail);
+
+            try
+            {
+                var result = await _accountService.ConfirmEmailChangeAsync(userId, newEmail, token);
+
+                if (!result.IsSuccess)
+                {
+                    _logger.LogWarning("Email change confirmation failed: {Message}", result.Message);
+                    return Redirect($"{_configuration["ClientUrl"]}/login?error={Uri.EscapeDataString(result.Message)}");
+                }
+
+                _logger.LogInformation("Email changed successfully for user: {UserId}", userId);
+                return Redirect($"{_configuration["ClientUrl"]}/login?emailChanged=true");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error confirming email change for user: {UserId}", userId);
+                return Redirect($"{_configuration["ClientUrl"]}/login?error=An error occurred during email change confirmation");
+            }
+        }
     }
 
 }

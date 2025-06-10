@@ -1,0 +1,130 @@
+﻿@page "/change-email"
+@inject IAccountClientService AccountService
+@inject NavigationManager Navigation
+@inject ILocalStorageService LocalStorage
+
+<AuthorizeView>
+    <Authorized>
+        <div class="container mt-5">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card shadow">
+                        <div class="card-header bg-primary text-white">
+                            <h3 class="card-title">Change Email Address</h3>
+                        </div>
+                        <div class="card-body">
+                            @if (showSuccessMessage)
+                            {
+                                <div class="alert alert-success">
+                                    @successMessage
+                                </div>
+                            }
+                            @if (showErrorMessage)
+                            {
+                                <div class="alert alert-danger">
+                                    @errorMessage
+                                </div>
+                            }
+                            
+                            <EditForm Model="@model" OnValidSubmit="@HandleSubmit">
+                                <DataAnnotationsValidator />
+                                <ValidationSummary />
+                                
+                                <div class="mb-3">
+                                    <label for="currentEmail" class="form-label">Current Email</label>
+                                    <input id="currentEmail" class="form-control" value="@currentEmail" disabled />
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="newEmail" class="form-label">New Email</label>
+                                    <InputText id="newEmail" @bind-Value="model.NewEmail" class="form-control" />
+                                    <ValidationMessage For="@(() => model.NewEmail)" />
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary" disabled="@isProcessing">
+                                        @if (isProcessing)
+                                        {
+                                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                            <span> Processing...</span>
+                                        }
+                                        else
+                                        {
+                                            <span>Submit</span>
+                                        }
+                                    </button>
+                                </div>
+                            </EditForm>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    private ChangeEmailRequestModel model = new();
+    private string currentEmail = string.Empty;
+    private bool isProcessing = false;
+    private bool showSuccessMessage = false;
+    private bool showErrorMessage = false;
+    private string successMessage = string.Empty;
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var profileResponse = await AccountService.GetProfileAsync();
+            if (profileResponse.IsSuccess && profileResponse.Profile != null)
+            {
+                currentEmail = profileResponse.Profile.Email;
+            }
+            else
+            {
+                errorMessage = "Failed to load your profile information.";
+                showErrorMessage = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+            showErrorMessage = true;
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        isProcessing = true;
+        showSuccessMessage = false;
+        showErrorMessage = false;
+        
+        try
+        {
+            var response = await AccountService.InitiateEmailChangeAsync(model.NewEmail);
+            
+            if (response.IsSuccess)
+            {
+                successMessage = "A confirmation link has been sent to your new email address. Please check your email and follow the instructions to complete the email change process.";
+                showSuccessMessage = true;
+                model = new ChangeEmailRequestModel();
+            }
+            else
+            {
+                errorMessage = response.Message ?? "Failed to initiate email change.";
+                showErrorMessage = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+            showErrorMessage = true;
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+}

@@ -292,5 +292,37 @@ namespace Appointment_Management_Blazor.Client.Services.Implementations
             return await response.Content.ReadFromJsonAsync<AuthResponse>();
         }
 
+        public async Task<AuthResponse> InitiateEmailChangeAsync(string newEmail)
+        {
+            try
+            {
+                await AddJwtTokenAsync();
+                var model = new ChangeEmailRequestModel { NewEmail = newEmail };
+                var response = await _httpClient.PostAsJsonAsync("api/account/change-email", model);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadFromJsonAsync<AuthResponse>();
+                    return error ?? new AuthResponse { IsSuccess = false, Message = "Request failed." };
+                }
+
+                return await response.Content.ReadFromJsonAsync<AuthResponse>();
+            }
+            catch (Exception ex)
+            {
+                return new AuthResponse
+                {
+                    IsSuccess = false,
+                    Message = $"Client error during email change: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<AuthResponse> ConfirmEmailChangeAsync(string userId, string newEmail, string token)
+        {
+            return await _httpClient.GetFromJsonAsync<AuthResponse>(
+                $"api/account/confirm-email-change?userId={userId}&newEmail={Uri.EscapeDataString(newEmail)}&token={Uri.EscapeDataString(token)}");
+        }
+
     }
 }

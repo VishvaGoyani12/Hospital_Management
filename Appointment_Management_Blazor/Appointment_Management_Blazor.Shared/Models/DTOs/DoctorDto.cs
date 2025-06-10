@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components.Forms;
+using System.ComponentModel.DataAnnotations;
 
 namespace Appointment_Management_Blazor.Shared.Models.DTOs
 {
@@ -16,15 +17,28 @@ namespace Appointment_Management_Blazor.Shared.Models.DTOs
 
     public class DoctorCreateEditModel
     {
-        public string? ApplicationUserId { get; set; } 
+        public string? ApplicationUserId { get; set; }
 
+        [Required]
         public string FullName { get; set; }
+
+        [Required]
         public string Gender { get; set; }
+        [EmailAddress]
+        [RegularExpression(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", ErrorMessage = "Please enter a valid email address.")]
         public string Email { get; set; }
+
+        [Required]
         public string SpecialistIn { get; set; }
+
+        [Required]
         public bool Status { get; set; }
 
+        [DataType(DataType.Password)]
         public string? Password { get; set; }
+
+        [DataType(DataType.Password)]
+        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string? ConfirmPassword { get; set; }
 
         public IBrowserFile? ProfileImage { get; set; } 

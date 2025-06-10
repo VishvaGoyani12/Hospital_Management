@@ -14,5 +14,7 @@ namespace Appointment_Management_Blazor.Interfaces.Interfaces
         Task<ProfileResponse> GetProfileAsync(string userId);
         Task<AuthResponse> UpdateProfileAsync(string userId, UpdateProfileViewModel model);
         Task<AuthResponse> UpdateProfileImageAsync(string userId, string? imagePath);
+        Task<AuthResponse> InitiateEmailChangeAsync(string userId, string newEmail);
+        Task<AuthResponse> ConfirmEmailChangeAsync(string userId, string newEmail, string token);
     }
 }
